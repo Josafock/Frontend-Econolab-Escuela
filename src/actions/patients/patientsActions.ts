@@ -1,6 +1,6 @@
 "use server";
 
-import { fetchApi } from "@/actions/_lib/api";
+import { fetchApi, type ApiResult } from "@/actions/_lib/api";
 
 export type PatientGender = "male" | "female" | "other";
 
@@ -51,7 +51,7 @@ export async function getPatients(params?: {
   search?: string;
   page?: number;
   limit?: number;
-}) {
+}): Promise<ApiResult<PatientsSearchResponse>> {
   const query = new URLSearchParams();
   if (params?.search) query.set("search", params.search);
   if (params?.page) query.set("page", String(params.page));

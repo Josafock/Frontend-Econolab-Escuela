@@ -1,6 +1,6 @@
 "use server";
 
-import { fetchApi } from "@/actions/_lib/api";
+import { fetchApi, type ApiResult } from "@/actions/_lib/api";
 
 export type ServiceStatus =
   | "pending"
@@ -93,7 +93,7 @@ export async function getServices(params?: {
   toDate?: string;
   page?: number;
   limit?: number;
-}) {
+}): Promise<ApiResult<ServicesSearchResponse>> {
   const query = new URLSearchParams();
   if (params?.search) query.set("search", params.search);
   if (params?.status) query.set("status", params.status);

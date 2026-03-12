@@ -5,6 +5,7 @@ import { createPatient, getPatients, type CreatePatientPayload, type Patient } f
 import { Search, Plus, Filter, Edit, Trash2, Eye, Phone, Mail, MapPin, User, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 type UiPatient = {
   id: number;
@@ -43,31 +44,40 @@ function toUiPatient(patient: Patient): UiPatient {
 
 export default function PacientesPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pacientes, setPacientes] = useState<UiPatient[]>([]);
 
-  const fetchPatients = async (search = '') => {
+  const fetchPatients = async () => {
     setLoading(true);
-    const response = await getPatients({ search, limit: 100 });
+    const response = await getPatients({
+      search: searchTerm.trim(),
+      page,
+      limit,
+    });
     if (!response.ok) {
       toast.error(response.errors[0] ?? 'No se pudieron cargar pacientes.');
       setPacientes([]);
+      setTotal(0);
       setLoading(false);
       return;
     }
 
     setPacientes(response.data.data.map(toUiPatient));
+    setTotal(response.data.meta.total);
     setLoading(false);
   };
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      void fetchPatients(searchTerm.trim());
+      void fetchPatients();
     }, 350);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, page, limit]);
 
   const addPatient = async (newPatient: CreatePatientPayload) => {
     setSaving(true);
@@ -80,7 +90,7 @@ export default function PacientesPage() {
 
     toast.success('Paciente registrado con exito.');
     setOpenAddModal(false);
-    await fetchPatients(searchTerm.trim());
+    await fetchPatients();
     setSaving(false);
   };
 
@@ -137,16 +147,19 @@ export default function PacientesPage() {
               type="text"
               placeholder="Buscar por nombre, telefono o documento..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
 
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <div className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg bg-white text-sm text-gray-600">
               <Filter size={18} />
-              Filtros
-            </button>
+              Busqueda paginada
+            </div>
           </div>
         </div>
       </div>
@@ -156,7 +169,7 @@ export default function PacientesPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Pacientes</p>
-              <p className="text-2xl font-bold text-gray-900">{pacientes.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{total}</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
               <User size={20} className="text-blue-600" />
@@ -291,11 +304,17 @@ export default function PacientesPage() {
               ))}
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <p className="text-sm text-gray-600">
-                Mostrando <span className="font-medium">{pacientes.length}</span> pacientes
-              </p>
-            </div>
+            <PaginationControls
+              page={page}
+              limit={limit}
+              total={total}
+              itemLabel="pacientes"
+              onPageChange={setPage}
+              onLimitChange={(nextLimit) => {
+                setLimit(nextLimit);
+                setPage(1);
+              }}
+            />
           </div>
 
           <div className="lg:hidden space-y-4">
@@ -367,6 +386,21 @@ export default function PacientesPage() {
       )}
 
       {openAddModal && <AddPatientModal setOpen={setOpenAddModal} addPatient={addPatient} isSaving={saving} />}
+      {!loading && pacientes.length > 0 ? (
+        <div className="mt-6 lg:hidden">
+          <PaginationControls
+            page={page}
+            limit={limit}
+            total={total}
+            itemLabel="pacientes"
+            onPageChange={setPage}
+            onLimitChange={(nextLimit) => {
+              setLimit(nextLimit);
+              setPage(1);
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

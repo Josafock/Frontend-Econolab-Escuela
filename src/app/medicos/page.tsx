@@ -6,6 +6,7 @@ import { Search, Plus, Filter, Edit, Trash2, Eye, Phone, Mail, User, Stethoscope
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import AddDoctorModal from '@/components/medicos/AddDoctorModal';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 type UiDoctor = {
   id: number;
@@ -35,32 +36,41 @@ function toUiDoctor(doctor: Doctor): UiDoctor {
 
 export default function MedicosPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [medicos, setMedicos] = useState<UiDoctor[]>([]);
 
-  const fetchDoctors = async (search = '') => {
+  const fetchDoctors = async () => {
     setLoading(true);
-    const response = await getDoctors({ search: search.trim(), limit: 100 });
+    const response = await getDoctors({
+      search: searchTerm.trim(),
+      page,
+      limit,
+    });
     if (!response.ok) {
       toast.error(response.errors[0] ?? 'No se pudieron cargar medicos.');
       setMedicos([]);
+      setTotal(0);
       setLoading(false);
       return;
     }
 
     setMedicos(response.data.data.map(toUiDoctor));
+    setTotal(response.data.meta.total);
     setLoading(false);
   };
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      void fetchDoctors(searchTerm);
+      void fetchDoctors();
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, page, limit]);
 
   const addDoctor = async (payload: CreateDoctorPayload) => {
     setSaving(true);
@@ -73,7 +83,7 @@ export default function MedicosPage() {
 
     toast.success('Medico registrado con exito.');
     setOpenAddModal(false);
-    await fetchDoctors(searchTerm);
+    await fetchDoctors();
     setSaving(false);
   };
 
@@ -128,16 +138,19 @@ export default function MedicosPage() {
               type="text"
               placeholder="Buscar por nombre, especialidad o cedula..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
 
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <div className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg bg-white text-sm text-gray-600">
               <Filter size={18} />
-              Filtros
-            </button>
+              Busqueda paginada
+            </div>
           </div>
         </div>
       </div>
@@ -147,7 +160,7 @@ export default function MedicosPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Medicos</p>
-              <p className="text-2xl font-bold text-gray-900">{medicos.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{total}</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
               <User size={20} className="text-blue-600" />
@@ -268,11 +281,17 @@ export default function MedicosPage() {
               ))}
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <p className="text-sm text-gray-600">
-                Mostrando <span className="font-medium">{medicos.length}</span> medicos
-              </p>
-            </div>
+            <PaginationControls
+              page={page}
+              limit={limit}
+              total={total}
+              itemLabel="medicos"
+              onPageChange={setPage}
+              onLimitChange={(nextLimit) => {
+                setLimit(nextLimit);
+                setPage(1);
+              }}
+            />
           </div>
 
           <div className="lg:hidden space-y-4">
@@ -336,6 +355,21 @@ export default function MedicosPage() {
       {openAddModal && (
         <AddDoctorModal setOpen={setOpenAddModal} addDoctor={addDoctor} isSaving={saving} />
       )}
+      {!loading && medicos.length > 0 ? (
+        <div className="mt-6 lg:hidden">
+          <PaginationControls
+            page={page}
+            limit={limit}
+            total={total}
+            itemLabel="medicos"
+            onPageChange={setPage}
+            onLimitChange={(nextLimit) => {
+              setLimit(nextLimit);
+              setPage(1);
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

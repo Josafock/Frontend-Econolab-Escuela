@@ -9,6 +9,7 @@ import { Search, Plus, Filter, Edit, Trash2, Eye, FileText, Calendar, Loader2 } 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 type UiService = {
   id: number;
@@ -52,6 +53,12 @@ function toUiService(service: ServiceOrder): UiService {
 
 export default function ServiciosPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'' | ServiceStatus>('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
   const [openServiceModal, setOpenServiceModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,16 +67,25 @@ export default function ServiciosPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [studies, setStudies] = useState<Study[]>([]);
 
-  const fetchServices = async (search = '') => {
+  const fetchServices = async () => {
     setLoading(true);
-    const response = await getServices({ search, limit: 100 });
+    const response = await getServices({
+      search: searchTerm.trim(),
+      status: statusFilter || undefined,
+      fromDate: fromDate || undefined,
+      toDate: toDate || undefined,
+      page,
+      limit,
+    });
     if (!response.ok) {
       toast.error(response.errors[0] ?? 'No se pudieron cargar servicios.');
       setServicios([]);
+      setTotal(0);
       setLoading(false);
       return;
     }
     setServicios(response.data.data.map(toUiService));
+    setTotal(response.data.meta.total);
     setLoading(false);
   };
 
@@ -97,10 +113,10 @@ export default function ServiciosPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      void fetchServices(searchTerm.trim());
+      void fetchServices();
     }, 350);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, statusFilter, fromDate, toDate, page, limit]);
 
   const addService = async (newService: {
     folio: string;
@@ -134,7 +150,7 @@ export default function ServiciosPage() {
 
     toast.success(`Servicio ${newService.folio} agregado exitosamente.`);
     setOpenServiceModal(false);
-    await fetchServices(searchTerm.trim());
+    await fetchServices();
     setSaving(false);
   };
 
@@ -199,16 +215,51 @@ export default function ServiciosPage() {
               type="text"
               placeholder="Buscar por folio, estudio, paciente..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
 
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <div className="flex flex-col gap-3 md:flex-row">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-3">
               <Filter size={18} />
-              Filtros
-            </button>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as '' | ServiceStatus);
+                  setPage(1);
+                }}
+                className="bg-transparent text-sm text-gray-900 outline-none"
+              >
+                <option value="">Todos los estatus</option>
+                <option value="pending">Pendiente</option>
+                <option value="in_progress">En proceso</option>
+                <option value="delayed">Retrasado</option>
+                <option value="completed">Completado</option>
+                <option value="cancelled">Cancelado</option>
+              </select>
+            </div>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                setPage(1);
+              }}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900"
+            />
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                setPage(1);
+              }}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900"
+            />
           </div>
         </div>
       </div>
@@ -218,7 +269,7 @@ export default function ServiciosPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Servicios</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-2xl font-bold text-gray-900">{total}</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
               <Calendar size={20} className="text-blue-600" />
@@ -350,11 +401,17 @@ export default function ServiciosPage() {
               ))}
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <p className="text-sm text-gray-600">
-                Mostrando <span className="font-medium">{servicios.length}</span> servicios
-              </p>
-            </div>
+            <PaginationControls
+              page={page}
+              limit={limit}
+              total={total}
+              itemLabel="servicios"
+              onPageChange={setPage}
+              onLimitChange={(nextLimit) => {
+                setLimit(nextLimit);
+                setPage(1);
+              }}
+            />
           </div>
 
           <div className="lg:hidden space-y-4">
@@ -432,6 +489,21 @@ export default function ServiciosPage() {
           isSaving={saving}
         />
       )}
+      {!loading && servicios.length > 0 ? (
+        <div className="mt-6 lg:hidden">
+          <PaginationControls
+            page={page}
+            limit={limit}
+            total={total}
+            itemLabel="servicios"
+            onPageChange={setPage}
+            onLimitChange={(nextLimit) => {
+              setLimit(nextLimit);
+              setPage(1);
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

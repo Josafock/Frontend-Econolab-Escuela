@@ -6,35 +6,49 @@ import { Search, Plus, Filter, Edit, Trash2, Eye, Tag, DollarSign, Hash, Loader2
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import AddStudyModal from '@/components/estudios/AddStudyModal';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function EstudiosPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'' | 'active' | 'suspended'>('');
+  const [typeFilter, setTypeFilter] = useState<'' | 'study' | 'package' | 'other'>('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [estudios, setEstudios] = useState<Study[]>([]);
 
-  const fetchStudies = async (search = '') => {
+  const fetchStudies = async () => {
     setLoading(true);
-    const response = await getStudies({ search: search.trim(), limit: 100 });
+    const response = await getStudies({
+      search: searchTerm.trim(),
+      status: statusFilter || undefined,
+      type: typeFilter || undefined,
+      page,
+      limit,
+    });
     if (!response.ok) {
       toast.error(response.errors[0] ?? 'No se pudieron cargar estudios.');
       setEstudios([]);
+      setTotal(0);
       setLoading(false);
       return;
     }
 
     setEstudios(response.data.data);
+    setTotal(response.data.meta.total);
     setLoading(false);
   };
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      void fetchStudies(searchTerm);
+      void fetchStudies();
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, statusFilter, typeFilter, page, limit]);
 
   const addStudy = async (payload: CreateStudyPayload) => {
     setSaving(true);
@@ -47,7 +61,7 @@ export default function EstudiosPage() {
 
     toast.success('Estudio registrado con exito.');
     setOpenAddModal(false);
-    await fetchStudies(searchTerm);
+    await fetchStudies();
     setSaving(false);
   };
 
@@ -100,16 +114,45 @@ export default function EstudiosPage() {
               type="text"
               placeholder="Buscar por nombre o clave..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
 
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <Filter size={18} />
-              Filtros
-            </button>
+          <div className="flex flex-col gap-3 md:flex-row">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-3">
+              <Filter size={18} className="text-gray-400" />
+              <select
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value as typeof typeFilter);
+                  setPage(1);
+                }}
+                className="bg-transparent text-sm text-gray-900 outline-none"
+              >
+                <option value="">Todos los tipos</option>
+                <option value="study">Estudio</option>
+                <option value="package">Paquete</option>
+                <option value="other">Otro</option>
+              </select>
+            </div>
+            <div className="rounded-lg border border-gray-300 bg-white px-3 py-3">
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as typeof statusFilter);
+                  setPage(1);
+                }}
+                className="bg-transparent text-sm text-gray-900 outline-none"
+              >
+                <option value="">Todos los estatus</option>
+                <option value="active">Activo</option>
+                <option value="suspended">Suspendido</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -119,7 +162,7 @@ export default function EstudiosPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Estudios</p>
-              <p className="text-2xl font-bold text-gray-900">{estudios.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{total}</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
               <Hash size={20} className="text-blue-600" />
@@ -236,11 +279,17 @@ export default function EstudiosPage() {
               ))}
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <p className="text-sm text-gray-600">
-                Mostrando <span className="font-medium">{estudios.length}</span> estudios
-              </p>
-            </div>
+            <PaginationControls
+              page={page}
+              limit={limit}
+              total={total}
+              itemLabel="estudios"
+              onPageChange={setPage}
+              onLimitChange={(nextLimit) => {
+                setLimit(nextLimit);
+                setPage(1);
+              }}
+            />
           </div>
 
           <div className="lg:hidden space-y-4">
@@ -297,6 +346,21 @@ export default function EstudiosPage() {
       {openAddModal && (
         <AddStudyModal setOpen={setOpenAddModal} addStudy={addStudy} isSaving={saving} />
       )}
+      {!loading && estudios.length > 0 ? (
+        <div className="mt-6 lg:hidden">
+          <PaginationControls
+            page={page}
+            limit={limit}
+            total={total}
+            itemLabel="estudios"
+            onPageChange={setPage}
+            onLimitChange={(nextLimit) => {
+              setLimit(nextLimit);
+              setPage(1);
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
