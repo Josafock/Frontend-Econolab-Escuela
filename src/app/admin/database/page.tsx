@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { getDbTopics, type DbTopic } from "@/actions/db-admin/dbAdminActions";
+import OperationProgressOverlay from "@/components/ui/OperationProgressOverlay";
 import { Loader2 } from "lucide-react";
-import { toast } from "react-toastify";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 type TopicStatus = "planned" | "partial" | "implemented";
 type BackupItem = {
@@ -39,6 +40,36 @@ export default function DatabaseAdminPage() {
   const [tableBackups, setTableBackups] = useState<BackupItem[]>([]);
   const [tables, setTables] = useState<string[]>([]);
   const [selectedTable, setSelectedTable] = useState("");
+  const [operationTitle, setOperationTitle] = useState("");
+  const [operationDescription, setOperationDescription] = useState("");
+  const [operationOpen, setOperationOpen] = useState(false);
+  const [operationProgress, setOperationProgress] = useState(12);
+
+  useEffect(() => {
+    if (!operationOpen) return undefined;
+
+    setOperationProgress(14);
+    const timer = window.setInterval(() => {
+      setOperationProgress((value) => (value >= 93 ? value : value + Math.max(2, (93 - value) / 5)));
+    }, 180);
+
+    return () => window.clearInterval(timer);
+  }, [operationOpen]);
+
+  const startOperation = (title: string, description: string) => {
+    setOperationTitle(title);
+    setOperationDescription(description);
+    setOperationOpen(true);
+  };
+
+  const finishOperation = () => {
+    setOperationProgress(100);
+    window.setTimeout(() => {
+      setOperationOpen(false);
+      setOperationTitle("");
+      setOperationDescription("");
+    }, 220);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -112,8 +143,8 @@ export default function DatabaseAdminPage() {
         Array.isArray(json?.errors) && typeof json.errors[0] === "string"
           ? json.errors[0]
           : typeof json?.message === "string"
-          ? json.message
-          : "No se pudieron cargar los backups de tabla.";
+            ? json.message
+            : "No se pudieron cargar los backups de tabla.";
       toast.error(msg);
       setTableBackups([]);
       setLoadingTableBackups(false);
@@ -155,8 +186,8 @@ export default function DatabaseAdminPage() {
         Array.isArray(json?.errors) && typeof json.errors[0] === "string"
           ? json.errors[0]
           : typeof json?.message === "string"
-          ? json.message
-          : "No se pudieron cargar las tablas.";
+            ? json.message
+            : "No se pudieron cargar las tablas.";
       toast.error(msg);
       setTables([]);
       setLoadingTables(false);
@@ -190,6 +221,7 @@ export default function DatabaseAdminPage() {
   }, []);
 
   const handleCreateBackup = async () => {
+    startOperation("Generando backup", "Estamos preparando el respaldo completo de la base de datos.");
     setCreatingBackup(true);
     const res = await fetch("/api/db-admin/backups", {
       method: "POST",
@@ -205,22 +237,25 @@ export default function DatabaseAdminPage() {
         Array.isArray(json?.errors) && typeof json.errors[0] === "string"
           ? json.errors[0]
           : typeof json?.message === "string"
-          ? json.message
-          : "No se pudo generar el backup.";
+            ? json.message
+            : "No se pudo generar el backup.";
       toast.error(message);
       setCreatingBackup(false);
+      finishOperation();
       return;
     }
 
     toast.success(json?.message ?? "Backup generado correctamente.");
     await loadBackups();
     setCreatingBackup(false);
+    finishOperation();
   };
 
   const handleRestoreBackup = async (fileName: string) => {
     const ok = window.confirm(`Esta accion restaurara la base de datos con: ${fileName}. ¿Deseas continuar?`);
     if (!ok) return;
 
+    startOperation("Restaurando backup", "Estamos restaurando la base de datos. Este proceso puede tardar unos momentos.");
     setRestoringBackup(fileName);
     const res = await fetch("/api/db-admin/backups/restore", {
       method: "POST",
@@ -236,15 +271,17 @@ export default function DatabaseAdminPage() {
         Array.isArray(json?.errors) && typeof json.errors[0] === "string"
           ? json.errors[0]
           : typeof json?.message === "string"
-          ? json.message
-          : "No se pudo restaurar el backup.";
+            ? json.message
+            : "No se pudo restaurar el backup.";
       toast.error(message);
       setRestoringBackup("");
+      finishOperation();
       return;
     }
 
     toast.success(json?.message ?? "Restauracion ejecutada correctamente.");
     setRestoringBackup("");
+    finishOperation();
   };
 
   const handleCreateTableBackup = async () => {
@@ -253,6 +290,10 @@ export default function DatabaseAdminPage() {
       return;
     }
 
+    startOperation(
+      "Generando backup de tabla",
+      `Estamos creando un respaldo para ${selectedTable}. Puedes seguir aqui mientras termina.`,
+    );
     setCreatingTableBackup(true);
     const res = await fetch("/api/db-admin/backups/table", {
       method: "POST",
@@ -269,37 +310,39 @@ export default function DatabaseAdminPage() {
         Array.isArray(json?.errors) && typeof json.errors[0] === "string"
           ? json.errors[0]
           : typeof json?.message === "string"
-          ? json.message
-          : "No se pudo generar el backup de tabla.";
+            ? json.message
+            : "No se pudo generar el backup de tabla.";
       toast.error(message);
       setCreatingTableBackup(false);
+      finishOperation();
       return;
     }
 
     toast.success(json?.message ?? "Backup de tabla generado correctamente.");
     await loadTableBackups();
     setCreatingTableBackup(false);
+    finishOperation();
   };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-gray-900">Modulo de Base de Datos</h1>
-        <p className="text-sm text-gray-600 mt-2">
+        <p className="mt-2 text-sm text-gray-600">
           {moduleName || "Administracion de Base de Datos"}
         </p>
         {checkedAt ? (
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="mt-1 text-xs text-gray-500">
             Ultima revision: {new Date(checkedAt).toLocaleString()}
           </p>
         ) : null}
       </div>
 
-      <section className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Backups</h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="mt-1 text-sm text-gray-600">
               Los respaldos se almacenan localmente en el backend y pueden restaurarse desde aqui.
             </p>
           </div>
@@ -307,7 +350,7 @@ export default function DatabaseAdminPage() {
             type="button"
             onClick={handleCreateBackup}
             disabled={creatingBackup}
-            className="rounded-lg border border-red-500 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 transition-colors"
+            className="rounded-lg border border-red-500 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-600 hover:text-white disabled:opacity-50"
           >
             {creatingBackup ? "Generando..." : "Generar backup"}
           </button>
@@ -319,14 +362,14 @@ export default function DatabaseAdminPage() {
           ) : backups.length === 0 ? (
             <div className="text-sm text-gray-600">No hay backups disponibles.</div>
           ) : (
-            <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Archivo</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Tamaño</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Creado</th>
-                    <th className="text-right px-4 py-3 font-semibold text-gray-700">Acciones</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Archivo</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Tamano</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Creado</th>
+                    <th className="px-4 py-3 text-right font-semibold text-gray-700">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -342,7 +385,7 @@ export default function DatabaseAdminPage() {
                           type="button"
                           onClick={() => handleRestoreBackup(backup.name)}
                           disabled={restoringBackup === backup.name}
-                          className="rounded-lg border border-red-500 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 transition-colors"
+                          className="rounded-lg border border-red-500 px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-600 hover:text-white disabled:opacity-50"
                         >
                           {restoringBackup === backup.name ? "Restaurando..." : "Restaurar"}
                         </button>
@@ -356,11 +399,11 @@ export default function DatabaseAdminPage() {
         </div>
       </section>
 
-      <section className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Backups por Tabla</h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="mt-1 text-sm text-gray-600">
               Respalda una tabla especifica y guarda los archivos en una carpeta separada del backend.
             </p>
           </div>
@@ -369,7 +412,7 @@ export default function DatabaseAdminPage() {
               value={selectedTable}
               onChange={(e) => setSelectedTable(e.target.value)}
               disabled={loadingTables || creatingTableBackup}
-              className="min-w-[260px] rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white disabled:bg-gray-100"
+              className="min-w-[260px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm disabled:bg-gray-100"
             >
               {loadingTables ? (
                 <option value="">Cargando tablas...</option>
@@ -387,7 +430,7 @@ export default function DatabaseAdminPage() {
               type="button"
               onClick={handleCreateTableBackup}
               disabled={creatingTableBackup || loadingTables || tables.length === 0}
-              className="rounded-lg border border-red-500 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 transition-colors"
+              className="rounded-lg border border-red-500 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-600 hover:text-white disabled:opacity-50"
             >
               {creatingTableBackup ? "Generando..." : "Generar backup de tabla"}
             </button>
@@ -400,13 +443,13 @@ export default function DatabaseAdminPage() {
           ) : tableBackups.length === 0 ? (
             <div className="text-sm text-gray-600">No hay backups de tabla disponibles.</div>
           ) : (
-            <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Archivo</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Tamaño</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Creado</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Archivo</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Tamano</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Creado</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -427,18 +470,18 @@ export default function DatabaseAdminPage() {
       </section>
 
       {loading ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm flex items-center justify-center gap-3 text-gray-600">
+        <div className="flex items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white p-8 text-gray-600 shadow-sm">
           <Loader2 className="h-5 w-5 animate-spin" />
           Cargando temas del modulo...
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           {topics.map((topic) => (
-            <section key={topic.id} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <section key={topic.id} className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <h2 className="text-lg font-semibold text-gray-900">{topic.title}</h2>
                 <span
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColor[
+                  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusColor[
                     topic.status as TopicStatus
                   ]}`}
                 >
@@ -446,11 +489,11 @@ export default function DatabaseAdminPage() {
                 </span>
               </div>
 
-              <p className="text-sm text-gray-700 mt-3">{topic.summary}</p>
+              <p className="mt-3 text-sm text-gray-700">{topic.summary}</p>
 
               <div className="mt-4">
                 <h3 className="text-sm font-semibold text-gray-900">Implementado</h3>
-                <ul className="mt-2 space-y-1 text-sm text-gray-700 list-disc list-inside">
+                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-gray-700">
                   {topic.implemented.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
@@ -459,7 +502,7 @@ export default function DatabaseAdminPage() {
 
               <div className="mt-4">
                 <h3 className="text-sm font-semibold text-gray-900">Pendiente</h3>
-                <ul className="mt-2 space-y-1 text-sm text-gray-700 list-disc list-inside">
+                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-gray-700">
                   {topic.pending.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
@@ -467,15 +510,15 @@ export default function DatabaseAdminPage() {
               </div>
 
               {topic.recommendation ? (
-                <p className="mt-4 text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
                   Recomendacion: {topic.recommendation}
                 </p>
               ) : null}
 
               {topic.data ? (
                 <div className="mt-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Datos tecnicos</h3>
-                  <pre className="text-xs bg-gray-900 text-gray-100 rounded-md p-3 overflow-auto">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-900">Datos tecnicos</h3>
+                  <pre className="overflow-auto rounded-md bg-gray-900 p-3 text-xs text-gray-100">
                     {JSON.stringify(topic.data, null, 2)}
                   </pre>
                 </div>
@@ -484,6 +527,13 @@ export default function DatabaseAdminPage() {
           ))}
         </div>
       )}
+
+      <OperationProgressOverlay
+        open={operationOpen}
+        title={operationTitle}
+        description={operationDescription}
+        progress={operationProgress}
+      />
     </div>
   );
 }

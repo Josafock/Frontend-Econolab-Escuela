@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useActionState, useEffect } from "react";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import { forgotPassword } from "@/actions/auth/forgotPasswordAction";
 import { Mail, Send, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -19,11 +19,10 @@ export default function ForgotPassForm() {
       state.errors.forEach((error: string) => toast.error(error));
     }
     if (state?.success) {
-      toast.success(state.success, {
-        onClose: () => {
-          router.push('/auth/new-password');
-        }
-      });
+      toast.success(state.success);
+      window.setTimeout(() => {
+        router.push('/auth/new-password');
+      }, 900);
     }
   }, [state, router]);
 

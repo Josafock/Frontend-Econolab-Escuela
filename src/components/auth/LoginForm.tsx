@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { Eye, EyeOff, User, Lock } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import { login } from '@/actions/auth/loginAction';
@@ -27,7 +27,7 @@ export default function LoginForm() {
     // 🔐 Caso MFA: no vamos a /home, sino a /auth/mfa
     if (state?.mfa) {
       if (state.success) {
-        toast.info(state.success);
+        toast(state.success);
       }
       if (state.email) {
         router.push(`/auth/mfa?email=${encodeURIComponent(state.email)}`);
@@ -39,9 +39,8 @@ export default function LoginForm() {
 
     // ✅ Login normal
     if (state?.success) {
-      toast.success(state.success, {
-        onClose: () => router.push('/home'),
-      });
+      toast.success(state.success);
+      window.setTimeout(() => router.push('/home'), 900);
     }
   }, [state, router]);
 

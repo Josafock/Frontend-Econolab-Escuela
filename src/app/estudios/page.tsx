@@ -1,12 +1,30 @@
 'use client';
 
+import DataTransferPanel from '@/components/data-transfer/DataTransferPanel';
 import { getStudies, type Study } from '@/actions/studies/studiesActions';
 import { createStudy, type CreateStudyPayload } from '@/actions/studies/studiesActions';
 import { Search, Plus, Filter, Edit, Trash2, Eye, Tag, DollarSign, Hash, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import AddStudyModal from '@/components/estudios/AddStudyModal';
 import PaginationControls from '@/components/ui/PaginationControls';
+
+const STUDY_TEMPLATE_HEADERS = [
+  'name',
+  'code',
+  'description',
+  'durationMinutes',
+  'type',
+  'normalPrice',
+  'difPrice',
+  'specialPrice',
+  'hospitalPrice',
+  'otherPrice',
+  'defaultDiscountPercent',
+  'method',
+  'indicator',
+  'status',
+];
 
 export default function EstudiosPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,13 +115,22 @@ export default function EstudiosPage() {
           <p className="text-gray-600">Catalogo de estudios y analisis medicos</p>
         </div>
 
-        <button
-          onClick={() => setOpenAddModal(true)}
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors mt-4 lg:mt-0"
-        >
-          <Plus size={20} />
-          Nuevo Estudio
-        </button>
+        <div className="mt-4 flex flex-wrap items-center gap-3 lg:mt-0">
+          <DataTransferPanel
+            moduleKey="studies"
+            moduleLabel="estudio"
+            moduleLabelPlural="Estudios"
+            templateHeaders={STUDY_TEMPLATE_HEADERS}
+            onImported={fetchStudies}
+          />
+          <button
+            onClick={() => setOpenAddModal(true)}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            <Plus size={20} />
+            Nuevo Estudio
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">

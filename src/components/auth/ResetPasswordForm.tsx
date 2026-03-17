@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import { Eye, EyeOff, Shield, CheckCircle2, XCircle } from 'lucide-react';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { resetPasswordAction } from '@/actions/auth/resetPasswordAction';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -30,10 +30,8 @@ export default function ResetPasswordForm({ token }: { token: string }) {
   useEffect(() => {
     if (state?.errors?.length) state.errors.forEach((e: string) => toast.error(e));
     if (state?.success) {
-      toast.success(state.success, {
-        onClose: () => router.push('/auth/login'),
-        onClick: () => router.push('/auth/login'),
-      });
+      toast.success(state.success);
+      window.setTimeout(() => router.push('/auth/login'), 900);
     }
   }, [state, router]);
 

@@ -1,12 +1,24 @@
 'use client';
 
+import DataTransferPanel from '@/components/data-transfer/DataTransferPanel';
 import { getDoctors, type Doctor } from '@/actions/doctors/doctorsActions';
 import { createDoctor, type CreateDoctorPayload } from '@/actions/doctors/doctorsActions';
 import { Search, Plus, Filter, Edit, Trash2, Eye, Phone, Mail, User, Stethoscope, BadgeCheck, Calendar, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import AddDoctorModal from '@/components/medicos/AddDoctorModal';
 import PaginationControls from '@/components/ui/PaginationControls';
+
+const DOCTOR_TEMPLATE_HEADERS = [
+  'firstName',
+  'lastName',
+  'middleName',
+  'email',
+  'phone',
+  'specialty',
+  'licenseNumber',
+  'notes',
+];
 
 type UiDoctor = {
   id: number;
@@ -121,13 +133,22 @@ export default function MedicosPage() {
           <p className="text-gray-600">Gestion del personal medico</p>
         </div>
 
-        <button
-          onClick={() => setOpenAddModal(true)}
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors mt-4 lg:mt-0"
-        >
-          <Plus size={20} />
-          Nuevo Medico
-        </button>
+        <div className="mt-4 flex flex-wrap items-center gap-3 lg:mt-0">
+          <DataTransferPanel
+            moduleKey="doctors"
+            moduleLabel="medico"
+            moduleLabelPlural="Medicos"
+            templateHeaders={DOCTOR_TEMPLATE_HEADERS}
+            onImported={fetchDoctors}
+          />
+          <button
+            onClick={() => setOpenAddModal(true)}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            <Plus size={20} />
+            Nuevo Medico
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">

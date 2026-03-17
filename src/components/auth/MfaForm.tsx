@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { Shield, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import { verifyMfaAction, type MfaState } from '@/actions/auth/verifyMfaAction';
@@ -22,13 +22,10 @@ export default function MfaForm({ email }: { email: string }) {
       state.errors.forEach((e: string) => toast.error(e));
     }
     if (state?.success) {
-      toast.success(state.success, {
-        onClose: () => {
-          // Igual que en login, si quieres redirigir por rol:
-          // if (state.rol === 'admin') return router.push('/admin');
-          router.push('/home');
-        },
-      });
+      toast.success(state.success);
+      window.setTimeout(() => {
+        router.push('/home');
+      }, 900);
     }
   }, [state, router]);
 

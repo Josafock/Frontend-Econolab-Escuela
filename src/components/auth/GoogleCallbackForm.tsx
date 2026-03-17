@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import { googleCallbackAction } from "@/actions/auth/googleCallbackAction";
 
 export default function GoogleOAuthPage() {

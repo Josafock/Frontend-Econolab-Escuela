@@ -8,7 +8,7 @@ import { getDoctors, type Doctor } from '@/actions/doctors/doctorsActions';
 import { Search, Plus, Filter, Edit, Trash2, Eye, FileText, Calendar, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import PaginationControls from '@/components/ui/PaginationControls';
 
 type UiService = {

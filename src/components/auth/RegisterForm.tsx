@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import {
   Eye,
   EyeOff,
@@ -59,9 +59,8 @@ export default function RegisterForm() {
       state.errors.forEach((error: string) => toast.error(error));
     }
     if (state?.success) {
-      toast.success(state.success, {
-        onClose: () => router.push('/auth/confirm-account'),
-      });
+      toast.success(state.success);
+      window.setTimeout(() => router.push('/auth/confirm-account'), 900);
       setFormData({ nombre: '', email: '', password: '', password2: '' });
     }
   }, [state, router]);

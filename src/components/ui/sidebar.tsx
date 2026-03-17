@@ -17,7 +17,7 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { User as UserType } from '@/schemas';
 import { logout } from '@/actions/auth/logoutAction';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 
 export function Sidebar(user: UserType) {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,11 +1,29 @@
 'use client';
 
 import AddPatientModal from '@/components/pacientes/AddPatientModal';
+import DataTransferPanel from '@/components/data-transfer/DataTransferPanel';
 import { createPatient, getPatients, type CreatePatientPayload, type Patient } from '@/actions/patients/patientsActions';
 import { Search, Plus, Filter, Edit, Trash2, Eye, Phone, Mail, MapPin, User, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import PaginationControls from '@/components/ui/PaginationControls';
+
+const PATIENT_TEMPLATE_HEADERS = [
+  'firstName',
+  'lastName',
+  'middleName',
+  'gender',
+  'birthDate',
+  'phone',
+  'email',
+  'addressLine',
+  'addressBetween',
+  'addressCity',
+  'addressState',
+  'addressZip',
+  'documentType',
+  'documentNumber',
+];
 
 type UiPatient = {
   id: number;
@@ -130,13 +148,22 @@ export default function PacientesPage() {
           <p className="text-gray-600">Gestion de informacion de pacientes</p>
         </div>
 
-        <button
-          className="flex rounded-lg bg-white px-4 py-3 text-sm font-medium border border-red-500 text-red-500 shadow-sm transition-all hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-          onClick={() => setOpenAddModal(true)}
-        >
-          <Plus size={20} />
-          Nuevo Paciente
-        </button>
+        <div className="mt-4 flex flex-wrap items-center gap-3 lg:mt-0">
+          <DataTransferPanel
+            moduleKey="patients"
+            moduleLabel="paciente"
+            moduleLabelPlural="Pacientes"
+            templateHeaders={PATIENT_TEMPLATE_HEADERS}
+            onImported={fetchPatients}
+          />
+          <button
+            className="flex rounded-lg bg-white px-4 py-3 text-sm font-medium border border-red-500 text-red-500 shadow-sm transition-all hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            onClick={() => setOpenAddModal(true)}
+          >
+            <Plus size={20} />
+            Nuevo Paciente
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
