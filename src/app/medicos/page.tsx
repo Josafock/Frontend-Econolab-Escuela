@@ -20,6 +20,17 @@ const DOCTOR_TEMPLATE_HEADERS = [
   'notes',
 ];
 
+const DOCTOR_EXPORT_FIELDS = [
+  { key: 'firstName', label: 'Nombre' },
+  { key: 'lastName', label: 'Apellido paterno' },
+  { key: 'middleName', label: 'Apellido materno' },
+  { key: 'email', label: 'Correo' },
+  { key: 'phone', label: 'Telefono' },
+  { key: 'specialty', label: 'Especialidad' },
+  { key: 'licenseNumber', label: 'Cedula' },
+  { key: 'notes', label: 'Notas' },
+];
+
 type UiDoctor = {
   id: number;
   nombre: string;
@@ -139,6 +150,7 @@ export default function MedicosPage() {
             moduleLabel="medico"
             moduleLabelPlural="Medicos"
             templateHeaders={DOCTOR_TEMPLATE_HEADERS}
+            fieldOptions={DOCTOR_EXPORT_FIELDS}
             onImported={fetchDoctors}
           />
           <button

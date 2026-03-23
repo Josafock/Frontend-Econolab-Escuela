@@ -26,6 +26,23 @@ const STUDY_TEMPLATE_HEADERS = [
   'status',
 ];
 
+const STUDY_EXPORT_FIELDS = [
+  { key: 'name', label: 'Nombre' },
+  { key: 'code', label: 'Clave' },
+  { key: 'description', label: 'Descripcion' },
+  { key: 'durationMinutes', label: 'Duracion' },
+  { key: 'type', label: 'Tipo' },
+  { key: 'normalPrice', label: 'Precio normal' },
+  { key: 'difPrice', label: 'Precio DIF' },
+  { key: 'specialPrice', label: 'Precio especial' },
+  { key: 'hospitalPrice', label: 'Precio hospital' },
+  { key: 'otherPrice', label: 'Otro precio' },
+  { key: 'defaultDiscountPercent', label: 'Descuento default' },
+  { key: 'method', label: 'Metodo' },
+  { key: 'indicator', label: 'Indicador' },
+  { key: 'status', label: 'Estatus' },
+];
+
 export default function EstudiosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'' | 'active' | 'suspended'>('');
@@ -121,6 +138,7 @@ export default function EstudiosPage() {
             moduleLabel="estudio"
             moduleLabelPlural="Estudios"
             templateHeaders={STUDY_TEMPLATE_HEADERS}
+            fieldOptions={STUDY_EXPORT_FIELDS}
             onImported={fetchStudies}
           />
           <button

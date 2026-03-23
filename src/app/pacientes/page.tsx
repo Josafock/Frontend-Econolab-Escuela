@@ -25,6 +25,23 @@ const PATIENT_TEMPLATE_HEADERS = [
   'documentNumber',
 ];
 
+const PATIENT_EXPORT_FIELDS = [
+  { key: 'firstName', label: 'Nombre' },
+  { key: 'lastName', label: 'Apellido paterno' },
+  { key: 'middleName', label: 'Apellido materno' },
+  { key: 'gender', label: 'Genero' },
+  { key: 'birthDate', label: 'Fecha de nacimiento' },
+  { key: 'phone', label: 'Telefono' },
+  { key: 'email', label: 'Correo' },
+  { key: 'addressLine', label: 'Direccion' },
+  { key: 'addressBetween', label: 'Entre calles' },
+  { key: 'addressCity', label: 'Ciudad' },
+  { key: 'addressState', label: 'Estado' },
+  { key: 'addressZip', label: 'Codigo postal' },
+  { key: 'documentType', label: 'Tipo de documento' },
+  { key: 'documentNumber', label: 'Numero de documento' },
+];
+
 type UiPatient = {
   id: number;
   nombre: string;
@@ -154,6 +171,7 @@ export default function PacientesPage() {
             moduleLabel="paciente"
             moduleLabelPlural="Pacientes"
             templateHeaders={PATIENT_TEMPLATE_HEADERS}
+            fieldOptions={PATIENT_EXPORT_FIELDS}
             onImported={fetchPatients}
           />
           <button
