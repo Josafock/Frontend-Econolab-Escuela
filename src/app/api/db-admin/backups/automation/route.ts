@@ -1,0 +1,42 @@
+import { cookies } from "next/headers";
+
+export async function GET() {
+  const token = (await cookies()).get("ECONOLAB_TOKEN")?.value;
+  if (!token) {
+    return Response.json({ errors: ["Tu sesion expiro. Inicia sesion nuevamente."] }, { status: 401 });
+  }
+
+  const res = await fetch(`${process.env.API_URL}/admin/backups/automation`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  const json = await res.json().catch(() => ({}));
+  return Response.json(json, { status: res.status });
+}
+
+export async function PUT(request: Request) {
+  const token = (await cookies()).get("ECONOLAB_TOKEN")?.value;
+  if (!token) {
+    return Response.json({ errors: ["Tu sesion expiro. Inicia sesion nuevamente."] }, { status: 401 });
+  }
+
+  const payload = await request.json().catch(() => ({}));
+
+  const res = await fetch(`${process.env.API_URL}/admin/backups/automation`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+
+  const json = await res.json().catch(() => ({}));
+  return Response.json(json, { status: res.status });
+}

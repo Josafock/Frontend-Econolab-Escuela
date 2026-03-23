@@ -11,7 +11,9 @@ import {
   Menu,
   X,
   Monitor,
-  Database
+  Database,
+  Activity,
+  TrendingUp
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -35,7 +37,11 @@ export function Sidebar(user: UserType) {
     { name: 'Pacientes', icon: <Users size={20} />, path: '/pacientes' },
     { name: 'Medicos', icon: <Stethoscope size={20} />, path: '/medicos' },
     ...(user.rol === 'admin'
-      ? [{ name: 'Admin BD', icon: <Database size={20} />, path: '/admin/database' }]
+      ? [
+          { name: 'Admin BD', icon: <Database size={20} />, path: '/admin/database' },
+          { name: 'Monitoreo BD', icon: <Activity size={20} />, path: '/admin/monitoring' },
+          { name: 'Prediccion de perdidas', icon: <TrendingUp size={20} />, path: '/admin/loss-prediction' },
+        ]
       : []),
   ];
 
