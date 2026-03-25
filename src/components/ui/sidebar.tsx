@@ -12,7 +12,6 @@ import {
   X,
   Monitor,
   Database,
-  Activity,
   TrendingUp
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -39,7 +38,6 @@ export function Sidebar(user: UserType) {
     ...(user.rol === 'admin'
       ? [
           { name: 'Admin BD', icon: <Database size={20} />, path: '/admin/database' },
-          { name: 'Monitoreo BD', icon: <Activity size={20} />, path: '/admin/monitoring' },
           { name: 'Prediccion de perdidas', icon: <TrendingUp size={20} />, path: '/admin/loss-prediction' },
         ]
       : []),
@@ -110,7 +108,10 @@ export function Sidebar(user: UserType) {
         {/* Navigation */}
         <nav className="px-4 py-6 space-y-2">
           {menuItems.map((item) => {
-            const isActive = pathname === item.path;
+            const isAdminDbRoute =
+              item.path === '/admin/database' &&
+              (pathname === '/admin/database' || pathname === '/admin/monitoring');
+            const isActive = pathname === item.path || isAdminDbRoute;
             return (
               <button
                 key={item.path}

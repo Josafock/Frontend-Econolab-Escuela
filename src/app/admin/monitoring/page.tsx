@@ -1,5 +1,5 @@
-import DatabaseMonitoringSection from "@/components/db-admin/DatabaseMonitoringSection";
+import { redirect } from "next/navigation";
 
 export default function DatabaseMonitoringPage() {
-  return <DatabaseMonitoringSection />;
+  redirect("/admin/database?tab=monitorizacion");
 }
