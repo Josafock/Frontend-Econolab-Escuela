@@ -2,11 +2,31 @@
 
 import AddPatientModal from '@/components/pacientes/AddPatientModal';
 import DataTransferPanel from '@/components/data-transfer/DataTransferPanel';
-import { createPatient, getPatients, type CreatePatientPayload, type Patient } from '@/actions/patients/patientsActions';
-import { Search, Plus, Filter, Edit, Trash2, Eye, Phone, Mail, MapPin, User, Loader2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
 import PaginationControls from '@/components/ui/PaginationControls';
+import {
+  createPatient,
+  getPatients,
+  type CreatePatientPayload,
+  type Patient,
+} from '@/actions/patients/patientsActions';
+import {
+  CalendarDays,
+  Eye,
+  Filter,
+  Loader2,
+  Mail,
+  MapPin,
+  PencilLine,
+  Phone,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+  UserRound,
+  Users,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import toast from 'react-hot-toast';
 
 const PATIENT_TEMPLATE_HEADERS = [
   'firstName',
@@ -77,6 +97,41 @@ function toUiPatient(patient: Patient): UiPatient {
   };
 }
 
+function ActionButton({
+  children,
+  tone = 'neutral',
+}: {
+  children: ReactNode;
+  tone?: 'neutral' | 'success' | 'danger';
+}) {
+  const toneClass =
+    tone === 'success'
+      ? 'hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
+      : tone === 'danger'
+        ? 'hover:border-red-200 hover:bg-red-50 hover:text-red-700'
+        : 'hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700';
+
+  return (
+    <button
+      type="button"
+      className={`rounded-xl border border-gray-200 bg-white p-2 text-gray-500 transition-colors ${toneClass}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function formatDate(value: string) {
+  if (!value) return 'N/D';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'N/D';
+  return parsed.toLocaleDateString('es-MX');
+}
+
+function buildFullName(patient: UiPatient) {
+  return [patient.nombre, patient.apellidoPaterno, patient.apellidoMaterno].filter(Boolean).join(' ');
+}
+
 export default function PacientesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
@@ -87,13 +142,14 @@ export default function PacientesPage() {
   const [saving, setSaving] = useState(false);
   const [pacientes, setPacientes] = useState<UiPatient[]>([]);
 
-  const fetchPatients = async () => {
+  const fetchPatients = useCallback(async () => {
     setLoading(true);
     const response = await getPatients({
       search: searchTerm.trim(),
       page,
       limit,
     });
+
     if (!response.ok) {
       toast.error(response.errors[0] ?? 'No se pudieron cargar pacientes.');
       setPacientes([]);
@@ -105,14 +161,14 @@ export default function PacientesPage() {
     setPacientes(response.data.data.map(toUiPatient));
     setTotal(response.data.meta.total);
     setLoading(false);
-  };
+  }, [limit, page, searchTerm]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       void fetchPatients();
     }, 350);
     return () => clearTimeout(timer);
-  }, [searchTerm, page, limit]);
+  }, [fetchPatients]);
 
   const addPatient = async (newPatient: CreatePatientPayload) => {
     setSaving(true);
@@ -148,24 +204,51 @@ export default function PacientesPage() {
     return Math.round(pacientes.reduce((acc, p) => acc + calcularEdad(p.fechaNacimiento), 0) / pacientes.length);
   }, [pacientes]);
 
+  const mujeres = useMemo(
+    () => pacientes.filter((patient) => patient.genero === 'Femenino').length,
+    [pacientes],
+  );
+
+  const hombres = useMemo(
+    () => pacientes.filter((patient) => patient.genero === 'Masculino').length,
+    [pacientes],
+  );
+
+  const registrosRecientes = useMemo(() => {
+    return pacientes.filter((patient) => {
+      if (!patient.fechaRegistro) return false;
+      const parsed = new Date(patient.fechaRegistro);
+      if (Number.isNaN(parsed.getTime())) return false;
+      const diff = Date.now() - parsed.getTime();
+      return diff <= 1000 * 60 * 60 * 24 * 30;
+    }).length;
+  }, [pacientes]);
+
   const getGeneroColor = (genero: 'Femenino' | 'Masculino' | 'Otro'): string => {
     const colors: Record<string, string> = {
-      Femenino: 'bg-pink-100 text-pink-800',
-      Masculino: 'bg-blue-100 text-blue-800',
-      Otro: 'bg-gray-100 text-gray-800',
+      Femenino: 'border-pink-200 bg-pink-50 text-pink-700',
+      Masculino: 'border-blue-200 bg-blue-50 text-blue-700',
+      Otro: 'border-gray-200 bg-gray-100 text-gray-700',
     };
-    return colors[genero] || 'bg-gray-100 text-gray-800';
+    return colors[genero] || 'border-gray-200 bg-gray-100 text-gray-700';
   };
 
   return (
-    <div className="p-8">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+    <div className="min-w-0">
+      <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Pacientes</h1>
-          <p className="text-gray-600">Gestion de informacion de pacientes</p>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+            <span className="h-2 w-2 rounded-full bg-red-500" />
+            Base de pacientes
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Pacientes</h1>
+          <p className="mt-2 max-w-2xl text-gray-600">
+            Conserva una vista clara del padron de pacientes con tarjetas, filtros y acciones rapidas
+            del mismo estilo que el frontend principal.
+          </p>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3 lg:mt-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
           <DataTransferPanel
             moduleKey="patients"
             moduleLabel="paciente"
@@ -175,175 +258,201 @@ export default function PacientesPage() {
             onImported={fetchPatients}
           />
           <button
-            className="flex rounded-lg bg-white px-4 py-3 text-sm font-medium border border-red-500 text-red-500 shadow-sm transition-all hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            type="button"
             onClick={() => setOpenAddModal(true)}
+            className="app-action-button inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700"
           >
             <Plus size={20} />
-            Nuevo Paciente
+            Nuevo paciente
           </button>
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, telefono o documento..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
+      <section className="app-panel-surface mb-6 overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
+        <div className="grid gap-6 p-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
+              <Sparkles className="h-3.5 w-3.5 text-red-600" />
+              Expedientes
+            </div>
+            <h2 className="mt-4 text-2xl font-semibold text-slate-900">Control visual de pacientes</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+              El modulo mantiene la misma logica actual, pero ahora comparte la jerarquia visual, tarjetas
+              suaves y componentes interactivos del proyecto mas avanzado.
+            </p>
           </div>
 
-          <div className="flex gap-3">
-            <div className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg bg-white text-sm text-gray-600">
+          <div className="rounded-[2rem] border border-slate-900/10 bg-slate-950 p-6 text-white shadow-lg shadow-slate-900/20">
+            <p className="text-xs uppercase tracking-[0.25em] text-orange-200">Resumen rapido</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Pacientes en vista</p>
+                <p className="mt-2 text-2xl font-semibold text-white">{pacientes.length}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Alta reciente</p>
+                <p className="mt-2 text-2xl font-semibold text-white">{registrosRecientes}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="app-panel-surface mb-6 overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-100 bg-gradient-to-r from-white via-red-50/60 to-white px-6 py-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, telefono o documento..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+              />
+            </div>
+
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700">
               <Filter size={18} />
               Busqueda paginada
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+      <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Pacientes</p>
-              <p className="text-2xl font-bold text-gray-900">{total}</p>
+              <p className="text-sm font-medium text-gray-600">Total pacientes</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{total}</p>
             </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <User size={20} className="text-blue-600" />
+            <div className="rounded-2xl bg-blue-100 p-3">
+              <Users className="h-5 w-5 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Mujeres</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {pacientes.filter((p) => p.genero === 'Femenino').length}
-              </p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{mujeres}</p>
             </div>
-            <div className="p-2 bg-pink-100 rounded-lg">
-              <User size={20} className="text-pink-600" />
+            <div className="rounded-2xl bg-pink-100 p-3">
+              <UserRound className="h-5 w-5 text-pink-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Hombres</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {pacientes.filter((p) => p.genero === 'Masculino').length}
-              </p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{hombres}</p>
             </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <User size={20} className="text-blue-600" />
+            <div className="rounded-2xl bg-sky-100 p-3">
+              <UserRound className="h-5 w-5 text-sky-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Edad Promedio</p>
-              <p className="text-2xl font-bold text-gray-900">{promedioEdad}</p>
+              <p className="text-sm font-medium text-gray-600">Edad promedio</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{promedioEdad}</p>
             </div>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <User size={20} className="text-green-600" />
+            <div className="rounded-2xl bg-emerald-100 p-3">
+              <CalendarDays className="h-5 w-5 text-emerald-600" />
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {loading ? (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-10 flex items-center justify-center gap-3 text-gray-600">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Cargando pacientes...
+        <div className="rounded-[2rem] border border-gray-200 bg-white p-10 shadow-sm">
+          <div className="flex items-center justify-center gap-3 text-gray-600">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Cargando pacientes...
+          </div>
         </div>
       ) : pacientes.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-10 text-center text-gray-600">
+        <div className="rounded-[2rem] border border-gray-200 bg-white p-10 text-center text-gray-600 shadow-sm">
           No hay pacientes registrados.
         </div>
       ) : (
         <>
-          <div className="hidden lg:block bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-700">
-              <div className="col-span-3">Nombre Completo</div>
-              <div className="col-span-1">Edad</div>
-              <div className="col-span-1">Genero</div>
-              <div className="col-span-2">Contacto</div>
-              <div className="col-span-2">Ubicacion</div>
-              <div className="col-span-2">Fecha Registro</div>
-              <div className="col-span-1">Acciones</div>
+          <div className="hidden overflow-visible rounded-[2rem] border border-gray-200 bg-white shadow-sm 2xl:block">
+            <div className="grid grid-cols-[2.1fr_0.8fr_1fr_1.5fr_1.4fr_1fr_auto] gap-4 border-b border-gray-200 bg-gray-50 px-6 py-4 text-sm font-semibold text-gray-700">
+              <div>Paciente</div>
+              <div>Edad</div>
+              <div>Genero</div>
+              <div>Contacto</div>
+              <div>Ubicacion</div>
+              <div>Registro</div>
+              <div className="text-right">Acciones</div>
             </div>
 
             <div className="divide-y divide-gray-200">
               {pacientes.map((paciente) => (
-                <div key={paciente.id} className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
-                  <div className="col-span-3">
-                    <h3 className="font-medium text-gray-900 text-sm">
-                      {paciente.nombre} {paciente.apellidoPaterno} {paciente.apellidoMaterno}
-                    </h3>
-                    <p className="text-xs text-gray-500">Nac: {new Date(paciente.fechaNacimiento).toLocaleDateString()}</p>
+                <div
+                  key={paciente.id}
+                  className="grid grid-cols-[2.1fr_0.8fr_1fr_1.5fr_1.4fr_1fr_auto] items-start gap-4 px-6 py-5 transition-colors hover:bg-gray-50"
+                >
+                  <div className="min-w-0">
+                    <h3 className="break-words text-sm font-semibold text-gray-900">{buildFullName(paciente)}</h3>
+                    <p className="mt-1 text-xs text-gray-500">ID {paciente.id}</p>
                   </div>
 
-                  <div className="col-span-1">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  <div>
+                    <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
                       {calcularEdad(paciente.fechaNacimiento)} anos
                     </span>
                   </div>
 
-                  <div className="col-span-1">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getGeneroColor(paciente.genero)}`}>
+                  <div>
+                    <span
+                      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getGeneroColor(paciente.genero)}`}
+                    >
                       {paciente.genero}
                     </span>
                   </div>
 
-                  <div className="col-span-2">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Phone size={14} className="text-gray-400" />
-                      <span className="text-sm text-gray-900">{paciente.telefono}</span>
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <Phone className="h-4 w-4 text-gray-400" />
+                      <span className="truncate">{paciente.telefono}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Mail size={14} className="text-gray-400" />
-                      <span className="text-sm text-gray-900 truncate">{paciente.email}</span>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      <span className="truncate">{paciente.email}</span>
                     </div>
                   </div>
 
-                  <div className="col-span-2">
-                    <div className="flex items-center gap-2">
-                      <MapPin size={14} className="text-gray-400" />
-                      <span className="text-sm text-gray-900">{paciente.colonia}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <MapPin className="h-4 w-4 text-gray-400" />
+                      <span className="truncate">{paciente.colonia}</span>
                     </div>
-                    <p className="text-xs text-gray-500 ml-6">{paciente.ciudad}</p>
+                    <p className="mt-1 text-xs text-gray-500">{paciente.ciudad}</p>
                   </div>
 
-                  <div className="col-span-2">
-                    <p className="text-sm text-gray-900">
-                      {paciente.fechaRegistro ? new Date(paciente.fechaRegistro).toLocaleDateString() : 'N/D'}
-                    </p>
-                  </div>
+                  <div className="text-sm text-gray-700">{formatDate(paciente.fechaRegistro)}</div>
 
-                  <div className="col-span-1">
-                    <div className="flex items-center justify-end space-x-1">
-                      <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors" title="Ver expediente">
-                        <Eye size={16} />
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-green-600 transition-colors" title="Editar">
-                        <Edit size={16} />
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-red-600 transition-colors" title="Eliminar">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                  <div className="flex justify-end gap-2">
+                    <ActionButton>
+                      <Eye size={16} />
+                    </ActionButton>
+                    <ActionButton tone="success">
+                      <PencilLine size={16} />
+                    </ActionButton>
+                    <ActionButton tone="danger">
+                      <Trash2 size={16} />
+                    </ActionButton>
                   </div>
                 </div>
               ))}
@@ -362,89 +471,91 @@ export default function PacientesPage() {
             />
           </div>
 
-          <div className="lg:hidden space-y-4">
+          <div className="grid gap-4 2xl:hidden xl:grid-cols-2">
             {pacientes.map((paciente) => (
-              <div key={paciente.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex justify-between items-start mb-3">
+              <div
+                key={paciente.id}
+                className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-medium text-gray-900 text-sm">
-                      {paciente.nombre} {paciente.apellidoPaterno}
-                    </h3>
-                    <p className="text-xs text-gray-500">{paciente.apellidoMaterno}</p>
+                    <p className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                      ID {paciente.id}
+                    </p>
+                    <h3 className="mt-3 text-sm font-semibold text-gray-900">{buildFullName(paciente)}</h3>
                   </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getGeneroColor(paciente.genero)}`}>
+
+                  <span
+                    className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getGeneroColor(paciente.genero)}`}
+                  >
                     {paciente.genero}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                  <div>
-                    <p className="text-gray-500 text-xs">Edad</p>
-                    <p className="text-gray-900 font-medium">{calcularEdad(paciente.fechaNacimiento)} anos</p>
+                <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500">Edad</p>
+                    <p className="mt-1 font-semibold text-gray-900">{calcularEdad(paciente.fechaNacimiento)} anos</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">Nacimiento</p>
-                    <p className="text-gray-900 text-xs">{new Date(paciente.fechaNacimiento).toLocaleDateString()}</p>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Phone size={14} className="text-gray-400" />
-                    <span className="text-sm text-gray-900">{paciente.telefono}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail size={14} className="text-gray-400" />
-                    <span className="text-sm text-gray-900 truncate">{paciente.email}</span>
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500">Registro</p>
+                    <p className="mt-1 font-semibold text-gray-900">{formatDate(paciente.fechaRegistro)}</p>
                   </div>
                 </div>
 
-                <div className="mb-3">
-                  <div className="flex items-center gap-2">
-                    <MapPin size={14} className="text-gray-400" />
-                    <span className="text-sm text-gray-900">{paciente.colonia}, {paciente.ciudad}</span>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Phone className="h-4 w-4 text-gray-400" />
+                    <span>{paciente.telefono}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Mail className="h-4 w-4 text-gray-400" />
+                    <span className="truncate">{paciente.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <span className="truncate">
+                      {paciente.colonia}, {paciente.ciudad}
+                    </span>
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-500 mb-3">
-                  Registrado: {paciente.fechaRegistro ? new Date(paciente.fechaRegistro).toLocaleDateString() : 'N/D'}
-                </div>
-
-                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                  <span className="text-xs text-gray-500">ID: {paciente.id}</span>
-                  <div className="flex space-x-2">
-                    <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                      <Eye size={14} />
-                    </button>
-                    <button className="p-1 text-gray-400 hover:text-green-600 transition-colors">
-                      <Edit size={14} />
-                    </button>
-                    <button className="p-1 text-gray-400 hover:text-red-600 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
+                <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
+                  <div className="text-xs text-gray-500">Nacimiento: {formatDate(paciente.fechaNacimiento)}</div>
+                  <div className="flex gap-2">
+                    <ActionButton>
+                      <Eye size={16} />
+                    </ActionButton>
+                    <ActionButton tone="success">
+                      <PencilLine size={16} />
+                    </ActionButton>
+                    <ActionButton tone="danger">
+                      <Trash2 size={16} />
+                    </ActionButton>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          <div className="mt-6 overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm 2xl:hidden">
+            <PaginationControls
+              page={page}
+              limit={limit}
+              total={total}
+              itemLabel="pacientes"
+              onPageChange={setPage}
+              onLimitChange={(nextLimit) => {
+                setLimit(nextLimit);
+                setPage(1);
+              }}
+            />
+          </div>
         </>
       )}
 
-      {openAddModal && <AddPatientModal setOpen={setOpenAddModal} addPatient={addPatient} isSaving={saving} />}
-      {!loading && pacientes.length > 0 ? (
-        <div className="mt-6 lg:hidden">
-          <PaginationControls
-            page={page}
-            limit={limit}
-            total={total}
-            itemLabel="pacientes"
-            onPageChange={setPage}
-            onLimitChange={(nextLimit) => {
-              setLimit(nextLimit);
-              setPage(1);
-            }}
-          />
-        </div>
+      {openAddModal ? (
+        <AddPatientModal setOpen={setOpenAddModal} addPatient={addPatient} isSaving={saving} />
       ) : null}
     </div>
   );

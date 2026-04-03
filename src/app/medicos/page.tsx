@@ -1,13 +1,27 @@
 'use client';
 
-import DataTransferPanel from '@/components/data-transfer/DataTransferPanel';
-import { getDoctors, type Doctor } from '@/actions/doctors/doctorsActions';
-import { createDoctor, type CreateDoctorPayload } from '@/actions/doctors/doctorsActions';
-import { Search, Plus, Filter, Edit, Trash2, Eye, Phone, Mail, User, Stethoscope, BadgeCheck, Calendar, Loader2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
 import AddDoctorModal from '@/components/medicos/AddDoctorModal';
+import DataTransferPanel from '@/components/data-transfer/DataTransferPanel';
 import PaginationControls from '@/components/ui/PaginationControls';
+import { createDoctor, getDoctors, type CreateDoctorPayload, type Doctor } from '@/actions/doctors/doctorsActions';
+import {
+  BadgeCheck,
+  Eye,
+  Filter,
+  Loader2,
+  Mail,
+  PencilLine,
+  Phone,
+  Plus,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Stethoscope,
+  Trash2,
+  Users,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import toast from 'react-hot-toast';
 
 const DOCTOR_TEMPLATE_HEADERS = [
   'firstName',
@@ -57,6 +71,34 @@ function toUiDoctor(doctor: Doctor): UiDoctor {
   };
 }
 
+function ActionButton({
+  children,
+  tone = 'neutral',
+}: {
+  children: ReactNode;
+  tone?: 'neutral' | 'success' | 'danger';
+}) {
+  const toneClass =
+    tone === 'success'
+      ? 'hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
+      : tone === 'danger'
+        ? 'hover:border-red-200 hover:bg-red-50 hover:text-red-700'
+        : 'hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700';
+
+  return (
+    <button
+      type="button"
+      className={`rounded-xl border border-gray-200 bg-white p-2 text-gray-500 transition-colors ${toneClass}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function buildFullName(doctor: UiDoctor) {
+  return [doctor.nombre, doctor.apellidoPaterno, doctor.apellidoMaterno].filter(Boolean).join(' ');
+}
+
 export default function MedicosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
@@ -67,7 +109,7 @@ export default function MedicosPage() {
   const [saving, setSaving] = useState(false);
   const [medicos, setMedicos] = useState<UiDoctor[]>([]);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     setLoading(true);
     const response = await getDoctors({
       search: searchTerm.trim(),
@@ -85,7 +127,7 @@ export default function MedicosPage() {
     setMedicos(response.data.data.map(toUiDoctor));
     setTotal(response.data.meta.total);
     setLoading(false);
-  };
+  }, [limit, page, searchTerm]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,7 +135,7 @@ export default function MedicosPage() {
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, page, limit]);
+  }, [fetchDoctors]);
 
   const addDoctor = async (payload: CreateDoctorPayload) => {
     setSaving(true);
@@ -112,18 +154,18 @@ export default function MedicosPage() {
 
   const getEstatusColor = (estatus: string): string => {
     const colors: Record<string, string> = {
-      Activo: 'bg-green-100 text-green-800 border-green-200',
+      Activo: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     };
-    return colors[estatus] || 'bg-gray-100 text-gray-800 border-gray-200';
+    return colors[estatus] || 'border-gray-200 bg-gray-100 text-gray-700';
   };
 
   const getEspecialidadColor = (especialidad: string): string => {
     const low = especialidad.toLowerCase();
-    if (low.includes('cardio')) return 'bg-red-100 text-red-800';
-    if (low.includes('pedia')) return 'bg-pink-100 text-pink-800';
-    if (low.includes('derma')) return 'bg-cyan-100 text-cyan-800';
-    if (low.includes('gine')) return 'bg-purple-100 text-purple-800';
-    return 'bg-blue-100 text-blue-800';
+    if (low.includes('cardio')) return 'border-red-200 bg-red-50 text-red-700';
+    if (low.includes('pedia')) return 'border-pink-200 bg-pink-50 text-pink-700';
+    if (low.includes('derma')) return 'border-cyan-200 bg-cyan-50 text-cyan-700';
+    if (low.includes('gine')) return 'border-violet-200 bg-violet-50 text-violet-700';
+    return 'border-blue-200 bg-blue-50 text-blue-700';
   };
 
   const especialidadesUnicas = useMemo(
@@ -137,14 +179,21 @@ export default function MedicosPage() {
   );
 
   return (
-    <div className="p-8">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+    <div className="min-w-0">
+      <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Medicos</h1>
-          <p className="text-gray-600">Gestion del personal medico</p>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+            <span className="h-2 w-2 rounded-full bg-red-500" />
+            Directorio medico
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Medicos</h1>
+          <p className="mt-2 max-w-2xl text-gray-600">
+            Supervisa al personal medico con el mismo lenguaje visual del frontend principal:
+            tarjetas, filtros limpios y acciones con mayor jerarquia.
+          </p>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3 lg:mt-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
           <DataTransferPanel
             moduleKey="doctors"
             moduleLabel="medico"
@@ -154,161 +203,198 @@ export default function MedicosPage() {
             onImported={fetchDoctors}
           />
           <button
+            type="button"
             onClick={() => setOpenAddModal(true)}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            className="app-action-button inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700"
           >
             <Plus size={20} />
-            Nuevo Medico
+            Nuevo medico
           </button>
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, especialidad o cedula..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
+      <section className="app-panel-surface mb-6 overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
+        <div className="grid gap-6 p-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
+              <Sparkles className="h-3.5 w-3.5 text-red-600" />
+              Operacion clinica
+            </div>
+            <h2 className="mt-4 text-2xl font-semibold text-slate-900">Equipo medico mas claro</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+              Conservamos las consultas actuales y solo trasladamos la parte visual para que el
+              catalogo de medicos combine con el resto del sistema.
+            </p>
           </div>
 
-          <div className="flex gap-3">
-            <div className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg bg-white text-sm text-gray-600">
+          <div className="rounded-[2rem] border border-slate-900/10 bg-slate-950 p-6 text-white shadow-lg shadow-slate-900/20">
+            <p className="text-xs uppercase tracking-[0.25em] text-orange-200">Cobertura</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Activos</p>
+                <p className="mt-2 text-2xl font-semibold text-white">{medicos.length}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Especialidades</p>
+                <p className="mt-2 text-2xl font-semibold text-white">{especialidadesUnicas}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="app-panel-surface mb-6 overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-100 bg-gradient-to-r from-white via-red-50/60 to-white px-6 py-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, especialidad o cedula..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+              />
+            </div>
+
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700">
               <Filter size={18} />
               Busqueda paginada
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+      <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Medicos</p>
-              <p className="text-2xl font-bold text-gray-900">{total}</p>
+              <p className="text-sm font-medium text-gray-600">Total medicos</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{total}</p>
             </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <User size={20} className="text-blue-600" />
+            <div className="rounded-2xl bg-blue-100 p-3">
+              <Users className="h-5 w-5 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Activos</p>
-              <p className="text-2xl font-bold text-gray-900">{medicos.length}</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{medicos.length}</p>
             </div>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <BadgeCheck size={20} className="text-green-600" />
+            <div className="rounded-2xl bg-emerald-100 p-3">
+              <ShieldCheck className="h-5 w-5 text-emerald-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Especialidades</p>
-              <p className="text-2xl font-bold text-gray-900">{especialidadesUnicas}</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{especialidadesUnicas}</p>
             </div>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Stethoscope size={20} className="text-purple-600" />
+            <div className="rounded-2xl bg-violet-100 p-3">
+              <Stethoscope className="h-5 w-5 text-violet-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Con Cedula</p>
-              <p className="text-2xl font-bold text-gray-900">{conCedula}</p>
+              <p className="text-sm font-medium text-gray-600">Con cedula</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{conCedula}</p>
             </div>
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Calendar size={20} className="text-orange-600" />
+            <div className="rounded-2xl bg-amber-100 p-3">
+              <BadgeCheck className="h-5 w-5 text-amber-600" />
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {loading ? (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-10 flex items-center justify-center gap-3 text-gray-600">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Cargando medicos...
+        <div className="rounded-[2rem] border border-gray-200 bg-white p-10 shadow-sm">
+          <div className="flex items-center justify-center gap-3 text-gray-600">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Cargando medicos...
+          </div>
         </div>
       ) : medicos.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-10 text-center text-gray-600">
+        <div className="rounded-[2rem] border border-gray-200 bg-white p-10 text-center text-gray-600 shadow-sm">
           No hay medicos registrados.
         </div>
       ) : (
         <>
-          <div className="hidden lg:block bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-700">
-              <div className="col-span-3">Nombre Completo</div>
-              <div className="col-span-2">Especialidad</div>
-              <div className="col-span-2">Cedula</div>
-              <div className="col-span-3">Contacto</div>
-              <div className="col-span-1">Estatus</div>
-              <div className="col-span-1">Acciones</div>
+          <div className="hidden overflow-visible rounded-[2rem] border border-gray-200 bg-white shadow-sm 2xl:block">
+            <div className="grid grid-cols-[2fr_1.35fr_1fr_1.4fr_0.9fr_auto] gap-4 border-b border-gray-200 bg-gray-50 px-6 py-4 text-sm font-semibold text-gray-700">
+              <div>Medico</div>
+              <div>Especialidad</div>
+              <div>Cedula</div>
+              <div>Contacto</div>
+              <div>Estatus</div>
+              <div className="text-right">Acciones</div>
             </div>
 
             <div className="divide-y divide-gray-200">
               {medicos.map((medico) => (
-                <div key={medico.id} className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
-                  <div className="col-span-3">
-                    <h3 className="font-medium text-gray-900 text-sm">
-                      {medico.nombre} {medico.apellidoPaterno} {medico.apellidoMaterno}
-                    </h3>
+                <div
+                  key={medico.id}
+                  className="grid grid-cols-[2fr_1.35fr_1fr_1.4fr_0.9fr_auto] items-start gap-4 px-6 py-5 transition-colors hover:bg-gray-50"
+                >
+                  <div className="min-w-0">
+                    <h3 className="break-words text-sm font-semibold text-gray-900">{buildFullName(medico)}</h3>
+                    <p className="mt-1 text-xs text-gray-500">ID {medico.id}</p>
                   </div>
 
-                  <div className="col-span-2">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEspecialidadColor(medico.especialidad)}`}>
+                  <div>
+                    <span
+                      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getEspecialidadColor(medico.especialidad)}`}
+                    >
                       {medico.especialidad}
                     </span>
                   </div>
 
-                  <div className="col-span-2">
-                    <span className="font-mono text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                  <div>
+                    <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 font-mono text-xs font-semibold text-gray-700">
                       {medico.cedula}
                     </span>
                   </div>
 
-                  <div className="col-span-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Phone size={14} className="text-gray-400" />
-                      <span className="text-sm text-gray-900">{medico.telefono}</span>
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <Phone className="h-4 w-4 text-gray-400" />
+                      <span className="truncate">{medico.telefono}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Mail size={14} className="text-gray-400" />
-                      <span className="text-sm text-gray-900 truncate">{medico.email}</span>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      <span className="truncate">{medico.email}</span>
                     </div>
                   </div>
 
-                  <div className="col-span-1">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEstatusColor(medico.estatus)}`}>
+                  <div>
+                    <span
+                      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getEstatusColor(medico.estatus)}`}
+                    >
                       {medico.estatus}
                     </span>
                   </div>
 
-                  <div className="col-span-1">
-                    <div className="flex items-center justify-end space-x-1">
-                      <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors" title="Ver perfil">
-                        <Eye size={16} />
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-green-600 transition-colors" title="Editar">
-                        <Edit size={16} />
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-red-600 transition-colors" title="Eliminar">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                  <div className="flex justify-end gap-2">
+                    <ActionButton>
+                      <Eye size={16} />
+                    </ActionButton>
+                    <ActionButton tone="success">
+                      <PencilLine size={16} />
+                    </ActionButton>
+                    <ActionButton tone="danger">
+                      <Trash2 size={16} />
+                    </ActionButton>
                   </div>
                 </div>
               ))}
@@ -327,81 +413,89 @@ export default function MedicosPage() {
             />
           </div>
 
-          <div className="lg:hidden space-y-4">
+          <div className="grid gap-4 2xl:hidden xl:grid-cols-2">
             {medicos.map((medico) => (
-              <div key={medico.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex justify-between items-start mb-3">
+              <div
+                key={medico.id}
+                className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-medium text-gray-900 text-sm">
-                      {medico.nombre} {medico.apellidoPaterno}
-                    </h3>
-                    <p className="text-xs text-gray-500">{medico.apellidoMaterno}</p>
+                    <p className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                      ID {medico.id}
+                    </p>
+                    <h3 className="mt-3 text-sm font-semibold text-gray-900">{buildFullName(medico)}</h3>
                   </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEstatusColor(medico.estatus)}`}>
+
+                  <span
+                    className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getEstatusColor(medico.estatus)}`}
+                  >
                     {medico.estatus}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                  <div>
-                    <p className="text-gray-500 text-xs">Especialidad</p>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getEspecialidadColor(medico.especialidad)}`}>
-                      {medico.especialidad}
-                    </span>
+                <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500">Especialidad</p>
+                    <p className="mt-1 font-semibold text-gray-900">{medico.especialidad}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">Cedula</p>
-                    <p className="text-gray-900 font-mono font-medium">{medico.cedula}</p>
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500">Cedula</p>
+                    <p className="mt-1 font-mono font-semibold text-gray-900">{medico.cedula}</p>
                   </div>
                 </div>
 
-                <div className="mb-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Phone size={14} className="text-gray-400" />
-                    <span className="text-sm text-gray-900">{medico.telefono}</span>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Phone className="h-4 w-4 text-gray-400" />
+                    <span>{medico.telefono}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Mail size={14} className="text-gray-400" />
-                    <span className="text-sm text-gray-900 truncate">{medico.email}</span>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Mail className="h-4 w-4 text-gray-400" />
+                    <span className="truncate">{medico.email}</span>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                  <span className="text-xs text-gray-500">ID: {medico.id}</span>
-                  <div className="flex space-x-2">
-                    <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                      <Eye size={14} />
-                    </button>
-                    <button className="p-1 text-gray-400 hover:text-green-600 transition-colors">
-                      <Edit size={14} />
-                    </button>
-                    <button className="p-1 text-gray-400 hover:text-red-600 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
+                <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
+                  <div
+                    className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getEspecialidadColor(medico.especialidad)}`}
+                  >
+                    {medico.especialidad}
+                  </div>
+                  <div className="flex gap-2">
+                    <ActionButton>
+                      <Eye size={16} />
+                    </ActionButton>
+                    <ActionButton tone="success">
+                      <PencilLine size={16} />
+                    </ActionButton>
+                    <ActionButton tone="danger">
+                      <Trash2 size={16} />
+                    </ActionButton>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          <div className="mt-6 overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm 2xl:hidden">
+            <PaginationControls
+              page={page}
+              limit={limit}
+              total={total}
+              itemLabel="medicos"
+              onPageChange={setPage}
+              onLimitChange={(nextLimit) => {
+                setLimit(nextLimit);
+                setPage(1);
+              }}
+            />
+          </div>
         </>
       )}
-      {openAddModal && (
+
+      {openAddModal ? (
         <AddDoctorModal setOpen={setOpenAddModal} addDoctor={addDoctor} isSaving={saving} />
-      )}
-      {!loading && medicos.length > 0 ? (
-        <div className="mt-6 lg:hidden">
-          <PaginationControls
-            page={page}
-            limit={limit}
-            total={total}
-            itemLabel="medicos"
-            onPageChange={setPage}
-            onLimitChange={(nextLimit) => {
-              setLimit(nextLimit);
-              setPage(1);
-            }}
-          />
-        </div>
       ) : null}
     </div>
   );

@@ -1,11 +1,5 @@
-import MfaForm from '@/components/auth/MfaForm';
+import { redirect } from "next/navigation";
 
-export default async function MfaPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ email?: string }>;
-}) {
-  const { email } = await searchParams;
-
-  return <MfaForm email={email ?? ''} />;
+export default function MfaPage() {
+  redirect("/auth/login");
 }

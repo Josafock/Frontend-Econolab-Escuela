@@ -1,48 +1,96 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+const LABELS: Record<string, string> = {
+  admin: "Administración",
+  database: "Base de datos",
+  monitoring: "Monitoreo",
+  "loss-prediction": "Predicción",
+  pacientes: "Pacientes",
+  medicos: "Médicos",
+  estudios: "Estudios",
+  servicios: "Servicios",
+  historial: "Historial",
+  perfil: "Perfil",
+  home: "Inicio",
+  detalle: "Detalle",
+  auth: "Acceso",
+  login: "Iniciar sesión",
+  register: "Registro",
+  "forgot-password": "Recuperar contraseña",
+  "new-password": "Nueva contraseña",
+  "confirm-account": "Confirmar cuenta",
+  google: "Google",
+  mfa: "Verificación MFA",
+};
+
+function formatLabel(segment: string): string {
+  if (LABELS[segment]) {
+    return LABELS[segment];
+  }
+
+  if (/^\d+$/.test(segment)) {
+    return segment;
+  }
+
+  const normalized = segment.replace(/-/g, " ");
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
 
 const Breadcrumbs = () => {
   const pathname = usePathname();
   const paths = pathname.split("/").filter(Boolean);
+  const normalizedPaths = paths[0] === "home" ? paths.slice(1) : paths;
+  const breadcrumbItems = normalizedPaths.map((path, index) => {
+    const href =
+      "/" +
+      (paths[0] === "home"
+        ? ["home", ...normalizedPaths.slice(0, index + 1)].join("/")
+        : normalizedPaths.slice(0, index + 1).join("/"));
+
+    return { path, href };
+  });
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-4">
-      <ol className="flex items-center text-sm text-gray-500">
-        {/* Inicio */}
-        <li>
+    <nav aria-label="Breadcrumb">
+      <ol className="flex flex-wrap items-center gap-y-2 text-sm text-gray-500">
+        <li className="min-w-0">
           <Link
-            href="/"
-            className="hover:text-red-500 transition-colors"
+            href="/home"
+            className="app-interactive-link inline-block max-w-full truncate font-medium transition-colors hover:text-red-500"
           >
             Inicio
           </Link>
         </li>
 
-        {paths.map((path, index) => {
-          const href = "/" + paths.slice(0, index + 1).join("/");
-          const label =
-            path.charAt(0).toUpperCase() + path.slice(1);
-          const isLast = index === paths.length - 1;
+        {breadcrumbItems.map(({ path, href }, index) => {
+          const label = formatLabel(path);
+          const isLast = index === breadcrumbItems.length - 1;
+          const nextPath = breadcrumbItems[index + 1]?.path;
+          const isDetailParent = path === "detalle" && Boolean(nextPath);
+          const isClickable = !isLast && !isDetailParent;
 
           return (
-            <li key={href} className="flex items-center">
-              {/* Separador */}
-              <span className="mx-2 text-gray-400">›</span>
+            <li key={href} className="flex min-w-0 items-center">
+              <span className="mx-2 text-gray-300">/</span>
 
-              {isLast ? (
-                <span className="font-medium text-gray-900">
-                  {label}
-                </span>
-              ) : (
+              {isClickable ? (
                 <Link
                   href={href}
-                  className="hover:text-red-500 transition-colors"
+                  className="app-interactive-link inline-block max-w-[12rem] truncate transition-colors hover:text-red-500 sm:max-w-[16rem]"
                 >
                   {label}
                 </Link>
+              ) : (
+                <span
+                  className={`inline-block max-w-[12rem] truncate ${
+                    isLast ? "font-medium text-gray-900" : "text-gray-500"
+                  } sm:max-w-[16rem]`}
+                >
+                  {label}
+                </span>
               )}
             </li>
           );

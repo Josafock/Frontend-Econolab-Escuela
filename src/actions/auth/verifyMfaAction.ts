@@ -10,6 +10,8 @@ export type MfaState = {
   rol: string;
 };
 
+const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+
 export async function verifyMfaAction(
   email: string,
   prevState: MfaState,
@@ -66,6 +68,8 @@ export async function verifyMfaAction(
     value: tokenJwt,
     httpOnly: true,
     path: "/",
+    sameSite: "lax",
+    maxAge: AUTH_COOKIE_MAX_AGE,
   });
 
   const { message } = successSchema.parse(json);

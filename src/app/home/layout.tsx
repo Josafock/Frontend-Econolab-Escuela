@@ -1,7 +1,6 @@
 import { Metadata } from "next";
-import { Sidebar } from "@/components/ui/sidebar";
 import { verifySession } from "@/auth/dal";
-import Breadcrumbs from "@/components/ui/BreadCrumbs";
+import ProtectedLayoutShell from "@/components/ui/ProtectedLayoutShell";
 
 export const metadata: Metadata = {
   title: "Home - Econolab",
@@ -10,15 +9,5 @@ export const metadata: Metadata = {
 export default async function HomeLayout({ children }: { children: React.ReactNode }) {
     const { user } = await verifySession();
 
-    return (
-        <div className="min-h-screen bg-white text-gray-900">
-            <div className="grid grid-cols-1 md:grid-cols-[16rem_1fr] min-h-screen">
-                <Sidebar {...user} />
-                <main className="p-6 bg-gray-50 min-h-screen overflow-y-auto">
-                    <Breadcrumbs />
-                    {children}
-                </main>
-            </div>
-        </div>
-    );
+    return <ProtectedLayoutShell user={user}>{children}</ProtectedLayoutShell>;
 }

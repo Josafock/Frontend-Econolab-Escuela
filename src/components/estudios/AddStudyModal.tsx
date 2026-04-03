@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Plus, Hash, Clock3, DollarSign, AlignLeft } from 'lucide-react';
+import { AlignLeft, Clock3, DollarSign, Hash, Loader2, Plus, X } from 'lucide-react';
 import type { CreateStudyPayload, StudyStatus, StudyType } from '@/actions/studies/studiesActions';
 
 interface AddStudyModalProps {
@@ -9,6 +9,12 @@ interface AddStudyModalProps {
   addStudy: (payload: CreateStudyPayload) => Promise<void>;
   isSaving: boolean;
 }
+
+const inputClass =
+  'w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-2 focus:ring-red-500/20';
+
+const inputWithIconClass =
+  'w-full rounded-2xl border border-gray-200 bg-white px-11 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-2 focus:ring-red-500/20';
 
 export default function AddStudyModal({ setOpen, addStudy, isSaving }: AddStudyModalProps) {
   const [formData, setFormData] = useState({
@@ -55,122 +61,180 @@ export default function AddStudyModal({ setOpen, addStudy, isSaving }: AddStudyM
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 bg-red-50">
-              <Plus className="h-5 w-5 text-red-600" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/20 bg-white shadow-2xl">
+        <div className="grid max-h-[90vh] overflow-y-auto lg:grid-cols-[0.9fr_1.1fr]">
+          <aside className="bg-gradient-to-br from-slate-950 via-slate-900 to-red-700 p-6 text-white lg:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-red-100">
+                  <Plus className="h-3.5 w-3.5" />
+                  Nuevo estudio
+                </div>
+                <h2 className="mt-4 text-2xl font-semibold">Alta en catalogo</h2>
+                <p className="mt-3 text-sm leading-6 text-red-50/90">
+                  Se mantiene la misma captura de datos, pero ahora con la presentacion visual del proyecto mas trabajado.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white transition-colors hover:bg-white/20"
+                disabled={isSaving}
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Nuevo Estudio</h2>
-              <p className="text-sm text-gray-500">Registrar estudio en el catalogo</p>
+
+            <div className="mt-8 space-y-4">
+              <div className="rounded-[1.75rem] border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
+                <p className="text-xs uppercase tracking-[0.22em] text-red-100">Incluye</p>
+                <div className="mt-4 grid gap-3 text-sm text-white/90">
+                  <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3">Nombre, clave y duracion del estudio</div>
+                  <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3">Tipo, estatus y descripcion</div>
+                  <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3">Matriz completa de precios y descuento</div>
+                </div>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-5">
+                <p className="text-xs uppercase tracking-[0.22em] text-red-100">Tip</p>
+                <p className="mt-3 text-sm leading-6 text-white/85">
+                  El nombre y la clave se normalizan en mayusculas al guardar, igual que en el flujo original.
+                </p>
+              </div>
             </div>
-          </div>
-          <button
-            onClick={() => setOpen(false)}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-            disabled={isSaving}
-          >
-            <X className="h-5 w-5" />
-          </button>
+          </aside>
+
+          <section className="bg-slate-50 p-6 lg:p-8">
+            <div className="mb-6 rounded-[1.75rem] border border-gray-200 bg-white p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Captura</p>
+              <p className="mt-2 text-sm text-gray-600">
+                Registra un estudio nuevo y define sus parametros comerciales desde una sola vista.
+              </p>
+            </div>
+
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div className="rounded-[1.75rem] border border-gray-200 bg-white p-5 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Datos base</p>
+                <div className="mt-4 grid gap-5 md:grid-cols-2">
+                  <label className="grid gap-2">
+                    <span className="text-sm font-semibold text-gray-700">Nombre</span>
+                    <div className="relative">
+                      <AlignLeft className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input name="name" value={formData.name} onChange={handleChange} className={inputWithIconClass} />
+                    </div>
+                  </label>
+
+                  <label className="grid gap-2">
+                    <span className="text-sm font-semibold text-gray-700">Clave</span>
+                    <div className="relative">
+                      <Hash className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input name="code" value={formData.code} onChange={handleChange} className={inputWithIconClass} />
+                    </div>
+                  </label>
+
+                  <label className="grid gap-2">
+                    <span className="text-sm font-semibold text-gray-700">Duracion (min)</span>
+                    <div className="relative">
+                      <Clock3 className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="number"
+                        min="1"
+                        name="durationMinutes"
+                        value={formData.durationMinutes}
+                        onChange={handleChange}
+                        className={inputWithIconClass}
+                      />
+                    </div>
+                  </label>
+
+                  <label className="grid gap-2">
+                    <span className="text-sm font-semibold text-gray-700">Tipo</span>
+                    <select name="type" value={formData.type} onChange={handleChange} className={`modal-select ${inputClass}`}>
+                      <option value="study">Estudio</option>
+                      <option value="package">Paquete</option>
+                      <option value="other">Otro</option>
+                    </select>
+                  </label>
+
+                  <label className="grid gap-2 md:col-span-2">
+                    <span className="text-sm font-semibold text-gray-700">Descripcion</span>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      rows={4}
+                      className={`${inputClass} resize-none`}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-gray-200 bg-white p-5 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Precios</p>
+                <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  {[
+                    { name: 'normalPrice', label: 'Precio normal' },
+                    { name: 'difPrice', label: 'Precio DIF' },
+                    { name: 'specialPrice', label: 'Precio especial' },
+                    { name: 'hospitalPrice', label: 'Precio hospital' },
+                    { name: 'otherPrice', label: 'Precio otro' },
+                    { name: 'defaultDiscountPercent', label: 'Descuento %' },
+                  ].map((field) => (
+                    <label key={field.name} className="grid gap-2">
+                      <span className="text-sm font-semibold text-gray-700">{field.label}</span>
+                      <div className="relative">
+                        <DollarSign className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          name={field.name}
+                          value={formData[field.name as keyof typeof formData]}
+                          onChange={handleChange}
+                          className={inputWithIconClass}
+                        />
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-gray-200 bg-white p-5 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Estado</p>
+                <div className="mt-4 grid gap-5 md:grid-cols-2">
+                  <label className="grid gap-2">
+                    <span className="text-sm font-semibold text-gray-700">Estatus</span>
+                    <select name="status" value={formData.status} onChange={handleChange} className={`modal-select ${inputClass}`}>
+                      <option value="active">Activo</option>
+                      <option value="suspended">Suspendido</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-gray-200 pt-5 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="app-action-button rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                  disabled={isSaving}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="app-action-button inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={isSaving}
+                >
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {isSaving ? 'Guardando...' : 'Registrar estudio'}
+                </button>
+              </div>
+            </form>
+          </section>
         </div>
-
-        <form className="p-6 space-y-6" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Nombre</label>
-              <div className="relative">
-                <AlignLeft className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-10 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-              </div>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Clave</label>
-              <div className="relative">
-                <Hash className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input name="code" value={formData.code} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-10 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-              </div>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Duracion (min)</label>
-              <div className="relative">
-                <Clock3 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input type="number" min="1" name="durationMinutes" value={formData.durationMinutes} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-10 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-              </div>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Tipo</label>
-              <select name="type" value={formData.type} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500">
-                <option value="study">Estudio</option>
-                <option value="package">Paquete</option>
-                <option value="other">Otro</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Precio normal</label>
-              <div className="relative">
-                <DollarSign className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input type="number" step="0.01" min="0" name="normalPrice" value={formData.normalPrice} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-10 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-              </div>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Precio DIF</label>
-              <input type="number" step="0.01" min="0" name="difPrice" value={formData.difPrice} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Precio especial</label>
-              <input type="number" step="0.01" min="0" name="specialPrice" value={formData.specialPrice} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Precio hospital</label>
-              <input type="number" step="0.01" min="0" name="hospitalPrice" value={formData.hospitalPrice} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Precio otro</label>
-              <input type="number" step="0.01" min="0" name="otherPrice" value={formData.otherPrice} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Descuento %</label>
-              <input type="number" step="0.01" min="0" name="defaultDiscountPercent" value={formData.defaultDiscountPercent} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Estatus</label>
-              <select name="status" value={formData.status} onChange={handleChange} className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500">
-                <option value="active">Activo</option>
-                <option value="suspended">Suspendido</option>
-              </select>
-            </div>
-            <div className="md:col-span-1">
-              <label className="mb-2 block text-sm font-medium text-gray-700">Descripcion</label>
-              <textarea name="description" value={formData.description} onChange={handleChange} rows={3} className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500" />
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
-              disabled={isSaving}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="flex-1 rounded-lg bg-white px-4 py-3 text-sm font-semibold border border-red-500 text-red-500 shadow-sm hover:bg-red-500 hover:text-white disabled:opacity-50"
-              disabled={isSaving}
-            >
-              {isSaving ? 'Guardando...' : 'Registrar Estudio'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

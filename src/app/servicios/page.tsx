@@ -1,15 +1,34 @@
 'use client';
 
 import AddServiceModal from '@/components/servicios/AgregarServicioModal';
-import { createService, getServices, type ServiceOrder, type ServiceStatus } from '@/actions/services/servicesActions';
+import PaginationControls from '@/components/ui/PaginationControls';
+import {
+  createService,
+  getServices,
+  type ServiceOrder,
+  type ServiceStatus,
+} from '@/actions/services/servicesActions';
 import { getPatients, type Patient } from '@/actions/patients/patientsActions';
 import { getStudies, type Study } from '@/actions/studies/studiesActions';
 import { getDoctors, type Doctor } from '@/actions/doctors/doctorsActions';
-import { Search, Plus, Filter, Edit, Trash2, Eye, FileText, Calendar, Loader2 } from 'lucide-react';
+import {
+  Activity,
+  BadgeCheck,
+  ClipboardList,
+  Clock3,
+  Eye,
+  FileText,
+  Filter,
+  Loader2,
+  PencilLine,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import PaginationControls from '@/components/ui/PaginationControls';
 
 type UiService = {
   id: number;
@@ -29,6 +48,14 @@ function formatDate(date?: string | null) {
   const parsed = new Date(date);
   if (Number.isNaN(parsed.getTime())) return 'N/D';
   return parsed.toLocaleString('es-MX');
+}
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+  }).format(value);
 }
 
 function toUiService(service: ServiceOrder): UiService {
@@ -51,11 +78,58 @@ function toUiService(service: ServiceOrder): UiService {
   };
 }
 
+function getStatusColor(status: ServiceStatus): string {
+  const colors: Record<ServiceStatus, string> = {
+    pending: 'border-blue-200 bg-blue-50 text-blue-700',
+    in_progress: 'border-orange-200 bg-orange-50 text-orange-700',
+    delayed: 'border-amber-200 bg-amber-50 text-amber-700',
+    completed: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    cancelled: 'border-red-200 bg-red-50 text-red-700',
+  };
+  return colors[status] || 'border-gray-200 bg-gray-50 text-gray-700';
+}
+
+function statusLabel(status: ServiceStatus) {
+  const labels: Record<ServiceStatus, string> = {
+    pending: 'Pendiente',
+    in_progress: 'En curso',
+    delayed: 'Retrasado',
+    completed: 'Concluido',
+    cancelled: 'Cancelado',
+  };
+  return labels[status] || status;
+}
+
+function ActionButton({
+  children,
+  tone = 'neutral',
+}: {
+  children: React.ReactNode;
+  tone?: 'neutral' | 'success' | 'danger';
+}) {
+  const toneClass =
+    tone === 'success'
+      ? 'hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
+      : tone === 'danger'
+        ? 'hover:border-red-200 hover:bg-red-50 hover:text-red-700'
+        : 'hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700';
+
+  return (
+    <button
+      type="button"
+      className={`rounded-xl border border-gray-200 bg-white p-2 text-gray-500 transition-colors ${toneClass}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function ServiciosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'' | ServiceStatus>('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -67,7 +141,7 @@ export default function ServiciosPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [studies, setStudies] = useState<Study[]>([]);
 
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     setLoading(true);
     const response = await getServices({
       search: searchTerm.trim(),
@@ -77,6 +151,7 @@ export default function ServiciosPage() {
       page,
       limit,
     });
+
     if (!response.ok) {
       toast.error(response.errors[0] ?? 'No se pudieron cargar servicios.');
       setServicios([]);
@@ -84,39 +159,34 @@ export default function ServiciosPage() {
       setLoading(false);
       return;
     }
+
     setServicios(response.data.data.map(toUiService));
     setTotal(response.data.meta.total);
     setLoading(false);
-  };
+  }, [fromDate, limit, page, searchTerm, statusFilter, toDate]);
 
-  const loadFormCatalogs = async () => {
+  const loadFormCatalogs = useCallback(async () => {
     const [patientsResponse, doctorsResponse, studiesResponse] = await Promise.all([
       getPatients({ limit: 200 }),
       getDoctors({ limit: 200 }),
       getStudies({ limit: 200, status: 'active' }),
     ]);
 
-    if (patientsResponse.ok) {
-      setPatients(patientsResponse.data.data);
-    }
-    if (doctorsResponse.ok) {
-      setDoctors(doctorsResponse.data.data);
-    }
-    if (studiesResponse.ok) {
-      setStudies(studiesResponse.data.data);
-    }
-  };
+    if (patientsResponse.ok) setPatients(patientsResponse.data.data);
+    if (doctorsResponse.ok) setDoctors(doctorsResponse.data.data);
+    if (studiesResponse.ok) setStudies(studiesResponse.data.data);
+  }, []);
 
   useEffect(() => {
     void loadFormCatalogs();
-  }, []);
+  }, [loadFormCatalogs]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       void fetchServices();
     }, 350);
     return () => clearTimeout(timer);
-  }, [searchTerm, statusFilter, fromDate, toDate, page, limit]);
+  }, [fetchServices]);
 
   const addService = async (newService: {
     folio: string;
@@ -154,250 +224,297 @@ export default function ServiciosPage() {
     setSaving(false);
   };
 
-  const getStatusColor = (status: ServiceStatus): string => {
-    const colors: Record<ServiceStatus, string> = {
-      pending: 'bg-blue-100 text-blue-800 border-blue-200',
-      in_progress: 'bg-orange-100 text-orange-800 border-orange-200',
-      delayed: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      completed: 'bg-green-100 text-green-800 border-green-200',
-      cancelled: 'bg-red-100 text-red-800 border-red-200',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
-  };
-
-  const statusLabel = (status: ServiceStatus) => {
-    const labels: Record<ServiceStatus, string> = {
-      pending: 'PENDIENTE',
-      in_progress: 'EN PROCESO',
-      delayed: 'RETRASADO',
-      completed: 'COMPLETADO',
-      cancelled: 'CANCELADO',
-    };
-    return labels[status] || status;
-  };
-
   const stats = useMemo(() => {
-    const completed = servicios.filter((s) => s.status === 'completed').length;
-    const inProgress = servicios.filter((s) => s.status === 'in_progress').length;
-    const income = servicios.reduce((acc, s) => acc + Number(s.costo), 0);
-    return { total: servicios.length, completed, inProgress, income };
+    const completed = servicios.filter((service) => service.status === 'completed').length;
+    const inProgress = servicios.filter((service) => service.status === 'in_progress').length;
+    const delayed = servicios.filter((service) => service.status === 'delayed').length;
+    const income = servicios.reduce((acc, service) => acc + Number(service.costo), 0);
+    return { total: servicios.length, completed, inProgress, delayed, income };
   }, [servicios]);
 
   return (
-    <div className="p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
+    <div className="min-w-0">
+      <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Servicios</h1>
-          <p className="text-gray-600">Gestion y administracion de servicios medicos</p>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+            <span className="h-2 w-2 rounded-full bg-red-500" />
+            Gestión de servicios
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Servicios</h1>
+          <p className="mt-2 max-w-2xl text-gray-600">
+            Registra servicios, controla fechas de entrega y mantén un panorama claro del flujo operativo.
+          </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 mt-2 lg:mt-0">
-          <button className="flex bg-white items-center text-sm border gap-2 border-green-600 text-green-700 hover:text-white hover:bg-green-600 px-6 py-3 rounded-lg font-medium transition-colors">
-            <FileText size={20} />
-            Generar Corte del Dia
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button className="app-action-button inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 shadow-sm transition-all hover:bg-emerald-100">
+            <FileText size={18} />
+            Generar corte del día
           </button>
 
           <button
-            className="flex rounded-lg bg-white px-4 py-3 text-sm font-medium border border-red-500 text-red-500 shadow-sm transition-all hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             onClick={() => setOpenServiceModal(true)}
+            className="app-action-button inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700"
           >
             <Plus size={20} />
-            Nuevo Servicio
+            Nuevo servicio
           </button>
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Buscar por folio, estudio, paciente..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
+      <section className="app-panel-surface mb-6 overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
+        <div className="grid gap-6 p-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
+              <Sparkles className="h-3.5 w-3.5 text-red-600" />
+              Operación
+            </div>
+            <h2 className="mt-4 text-2xl font-semibold text-slate-900">Control visual de servicios</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+              Este módulo ahora comparte el mismo lenguaje visual del proyecto principal: tarjetas suaves, filtros claros
+              y bloques operativos más legibles.
+            </p>
           </div>
 
-          <div className="flex flex-col gap-3 md:flex-row">
-            <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-3">
-              <Filter size={18} />
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value as '' | ServiceStatus);
-                  setPage(1);
-                }}
-                className="bg-transparent text-sm text-gray-900 outline-none"
-              >
-                <option value="">Todos los estatus</option>
-                <option value="pending">Pendiente</option>
-                <option value="in_progress">En proceso</option>
-                <option value="delayed">Retrasado</option>
-                <option value="completed">Completado</option>
-                <option value="cancelled">Cancelado</option>
-              </select>
+          <div className="rounded-[2rem] border border-slate-900/10 bg-slate-950 p-6 text-white shadow-lg shadow-slate-900/20">
+            <p className="text-xs uppercase tracking-[0.25em] text-orange-200">Resumen rápido</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Concluidos</p>
+                <p className="mt-2 text-2xl font-semibold text-white">{stats.completed}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-300">En curso</p>
+                <p className="mt-2 text-2xl font-semibold text-white">{stats.inProgress}</p>
+              </div>
             </div>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => {
-                setFromDate(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900"
-            />
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900"
-            />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+      <section className="app-panel-surface mb-6 overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-100 bg-gradient-to-r from-white via-red-50/60 to-white px-6 py-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por folio, estudio o paciente..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowFilters((current) => !current)}
+              className="app-action-button inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              <Filter size={18} />
+              Filtros
+            </button>
+          </div>
+        </div>
+
+        {showFilters ? (
+          <div className="space-y-4 px-6 py-4">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Estatus</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: '', label: 'Todos' },
+                  { value: 'pending', label: 'Pendientes' },
+                  { value: 'in_progress', label: 'En curso' },
+                  { value: 'delayed', label: 'Retrasados' },
+                  { value: 'completed', label: 'Concluidos' },
+                  { value: 'cancelled', label: 'Cancelados' },
+                ].map((option) => (
+                  <button
+                    key={option.value || 'all'}
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter(option.value as '' | ServiceStatus);
+                      setPage(1);
+                    }}
+                    className={`app-chip-button rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                      statusFilter === option.value
+                        ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                        : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">Desde</label>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => {
+                    setFromDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">Hasta</label>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => {
+                    setToDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Servicios</p>
-              <p className="text-2xl font-bold text-gray-900">{total}</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{total}</p>
             </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Calendar size={20} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Completados</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
-            </div>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <FileText size={20} className="text-green-600" />
+            <div className="rounded-2xl bg-blue-100 p-3">
+              <ClipboardList className="h-5 w-5 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">En Proceso</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
+              <p className="text-sm font-medium text-gray-600">Concluidos</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{stats.completed}</p>
             </div>
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <FileText size={20} className="text-orange-600" />
+            <div className="rounded-2xl bg-emerald-100 p-3">
+              <BadgeCheck className="h-5 w-5 text-emerald-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Ingreso</p>
-              <p className="text-2xl font-bold text-gray-900">${stats.income.toFixed(2)}</p>
+              <p className="text-sm font-medium text-gray-600">En curso</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{stats.inProgress}</p>
             </div>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <FileText size={20} className="text-purple-600" />
+            <div className="rounded-2xl bg-orange-100 p-3">
+              <Clock3 className="h-5 w-5 text-orange-600" />
             </div>
           </div>
         </div>
-      </div>
+
+        <div className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Ingreso estimado</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">{formatMoney(stats.income)}</p>
+            </div>
+            <div className="rounded-2xl bg-rose-100 p-3">
+              <Activity className="h-5 w-5 text-rose-600" />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {loading ? (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-10 flex items-center justify-center gap-3 text-gray-600">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Cargando servicios...
+        <div className="rounded-[2rem] border border-gray-200 bg-white p-10 shadow-sm">
+          <div className="flex items-center justify-center gap-3 text-gray-600">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Cargando servicios...
+          </div>
         </div>
       ) : servicios.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-10 text-center text-gray-600">
-          No hay servicios registrados.
+        <div className="rounded-[2rem] border border-gray-200 bg-white p-10 text-center text-gray-600 shadow-sm">
+          No hay servicios para el filtro seleccionado.
         </div>
       ) : (
         <>
-          <div className="hidden lg:block bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-700">
-              <div className="col-span-1">Folio</div>
-              <div className="col-span-2">Estudio</div>
-              <div className="col-span-2">Paciente</div>
-              <div className="col-span-1">Sucursal</div>
-              <div className="col-span-2">Fecha Creacion</div>
-              <div className="col-span-1">Fecha Entrega</div>
-              <div className="col-span-1">Costo</div>
-              <div className="col-span-1">Status</div>
-              <div className="col-span-1">Acciones</div>
+          <div className="hidden overflow-visible rounded-[2rem] border border-gray-200 bg-white shadow-sm 2xl:block">
+            <div className="grid grid-cols-[1.1fr_2.1fr_1.8fr_1fr_1.4fr_1.4fr_0.9fr_1fr_1fr] gap-4 border-b border-gray-200 bg-gray-50 px-6 py-4 text-sm font-semibold text-gray-700">
+              <div>Folio</div>
+              <div>Estudios</div>
+              <div>Paciente</div>
+              <div>Sucursal</div>
+              <div>Creación</div>
+              <div>Entrega</div>
+              <div>Total</div>
+              <div>Estatus</div>
+              <div className="text-right">Acciones</div>
             </div>
 
             <div className="divide-y divide-gray-200">
               {servicios.map((servicio) => (
-                <Link href="/servicios/detalle" key={servicio.folio} className="block">
-                  <div className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
-                    <div className="col-span-1">
-                      <span className="font-mono text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
-                        {servicio.folio}
-                      </span>
-                    </div>
-
-                    <div className="col-span-2">
-                      <h3 className="font-medium text-gray-900 text-sm line-clamp-3">{servicio.estudio}</h3>
-                    </div>
-
-                    <div className="col-span-2">
-                      <p className="text-sm text-gray-900 font-medium mb-1">{servicio.paciente}</p>
-                      {servicio.telefono && <p className="text-xs text-gray-500">Tel: {servicio.telefono}</p>}
-                    </div>
-
-                    <div className="col-span-1">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {servicio.sucursal}
-                      </span>
-                    </div>
-
-                    <div className="col-span-2">
-                      <p className="text-sm text-gray-900">{servicio.creador}</p>
-                    </div>
-
-                    <div className="col-span-1">
-                      <p className="text-sm text-gray-900">{servicio.fechaEntrega}</p>
-                    </div>
-
-                    <div className="col-span-1">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        ${servicio.costo}
-                      </span>
-                    </div>
-
-                    <div className="col-span-1">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(servicio.status)}`}>
-                        {statusLabel(servicio.status)}
-                      </span>
-                    </div>
-
-                    <div className="col-span-1">
-                      <div className="flex items-center justify-end space-x-1">
-                        <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors" title="Ver">
-                          <Eye size={16} />
-                        </button>
-                        <button className="p-1 text-gray-400 hover:text-green-600 transition-colors" title="Editar">
-                          <Edit size={16} />
-                        </button>
-                        <button className="p-1 text-gray-400 hover:text-red-600 transition-colors" title="Eliminar">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
+                <div
+                  key={servicio.id}
+                  className="grid grid-cols-[1.1fr_2.1fr_1.8fr_1fr_1.4fr_1.4fr_0.9fr_1fr_1fr] items-start gap-4 px-6 py-5 transition-colors hover:bg-gray-50"
+                >
+                  <div>
+                    <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                      {servicio.folio}
+                    </span>
                   </div>
-                </Link>
+
+                  <div className="min-w-0">
+                    <h3 className="break-words text-sm font-semibold text-gray-900">{servicio.estudio}</h3>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-semibold text-gray-900">{servicio.paciente}</p>
+                    <p className="mt-1 text-xs text-gray-500">Tel. {servicio.telefono}</p>
+                  </div>
+
+                  <div>
+                    <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
+                      {servicio.sucursal}
+                    </span>
+                  </div>
+
+                  <div className="text-sm text-gray-700">{servicio.creador}</div>
+                  <div className="text-sm text-gray-700">{servicio.fechaEntrega}</div>
+
+                  <div>
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                      {formatMoney(Number(servicio.costo))}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusColor(servicio.status)}`}>
+                      {statusLabel(servicio.status)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Link
+                      href="/servicios/detalle"
+                      className="rounded-xl border border-gray-200 bg-white p-2 text-gray-500 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <Eye size={16} />
+                    </Link>
+                    <ActionButton tone="success">
+                      <PencilLine size={16} />
+                    </ActionButton>
+                    <ActionButton tone="danger">
+                      <Trash2 size={16} />
+                    </ActionButton>
+                  </div>
+                </div>
               ))}
             </div>
 
@@ -414,72 +531,83 @@ export default function ServiciosPage() {
             />
           </div>
 
-          <div className="lg:hidden space-y-4">
+          <div className="grid gap-4 2xl:hidden xl:grid-cols-2">
             {servicios.map((servicio) => (
-              <div key={servicio.folio} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex justify-between items-start mb-3">
-                  <span className="font-mono text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
-                    {servicio.folio}
-                  </span>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(servicio.status)}`}>
+              <div
+                key={servicio.id}
+                className="app-panel-surface rounded-3xl border border-gray-200 bg-white p-5 shadow-sm"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                      {servicio.folio}
+                    </p>
+                    <h3 className="mt-3 text-sm font-semibold text-gray-900">{servicio.estudio}</h3>
+                  </div>
+
+                  <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusColor(servicio.status)}`}>
                     {statusLabel(servicio.status)}
                   </span>
                 </div>
 
-                <div className="mb-3">
-                  <h3 className="font-medium text-gray-900 text-sm mb-2">Estudio:</h3>
-                  <p className="text-sm text-gray-700">{servicio.estudio}</p>
-                </div>
-
-                <div className="mb-3">
-                  <h3 className="font-medium text-gray-900 text-sm mb-1">Paciente:</h3>
-                  <p className="text-sm text-gray-700">{servicio.paciente}</p>
-                  {servicio.telefono && <p className="text-xs text-gray-500 mt-1">Tel: {servicio.telefono}</p>}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                  <div>
-                    <p className="text-gray-500 text-xs">Sucursal</p>
-                    <p className="text-gray-900 font-medium">{servicio.sucursal}</p>
+                <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500">Paciente</p>
+                    <p className="mt-1 font-semibold text-gray-900">{servicio.paciente}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">Costo</p>
-                    <p className="text-gray-900 font-medium">${servicio.costo}</p>
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500">Sucursal</p>
+                    <p className="mt-1 font-semibold text-gray-900">{servicio.sucursal}</p>
+                  </div>
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500">Creación</p>
+                    <p className="mt-1 font-semibold text-gray-900">{servicio.creador}</p>
+                  </div>
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500">Total</p>
+                    <p className="mt-1 font-semibold text-gray-900">{formatMoney(Number(servicio.costo))}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                  <div>
-                    <p className="text-gray-500 text-xs">Creado</p>
-                    <p className="text-gray-900 text-xs">{servicio.creador}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">Entrega</p>
-                    <p className="text-gray-900 text-xs">{servicio.fechaEntrega}</p>
-                  </div>
-                </div>
+                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+                  <div className="text-xs text-gray-500">Entrega: {servicio.fechaEntrega}</div>
 
-                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                  <div className="text-xs text-gray-500">Ultima actualizacion</div>
-                  <div className="flex space-x-2">
-                    <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                      <Eye size={14} />
-                    </button>
-                    <button className="p-1 text-gray-400 hover:text-green-600 transition-colors">
-                      <Edit size={14} />
-                    </button>
-                    <button className="p-1 text-gray-400 hover:text-red-600 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
+                  <div className="flex gap-2">
+                    <Link
+                      href="/servicios/detalle"
+                      className="rounded-xl border border-gray-200 bg-white p-2 text-gray-500 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <Eye size={16} />
+                    </Link>
+                    <ActionButton tone="success">
+                      <PencilLine size={16} />
+                    </ActionButton>
+                    <ActionButton tone="danger">
+                      <Trash2 size={16} />
+                    </ActionButton>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          <div className="mt-6 overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm 2xl:hidden">
+            <PaginationControls
+              page={page}
+              limit={limit}
+              total={total}
+              itemLabel="servicios"
+              onPageChange={setPage}
+              onLimitChange={(nextLimit) => {
+                setLimit(nextLimit);
+                setPage(1);
+              }}
+            />
+          </div>
         </>
       )}
 
-      {openServiceModal && (
+      {openServiceModal ? (
         <AddServiceModal
           setOpen={setOpenServiceModal}
           addService={addService}
@@ -488,21 +616,6 @@ export default function ServiciosPage() {
           studies={studies}
           isSaving={saving}
         />
-      )}
-      {!loading && servicios.length > 0 ? (
-        <div className="mt-6 lg:hidden">
-          <PaginationControls
-            page={page}
-            limit={limit}
-            total={total}
-            itemLabel="servicios"
-            onPageChange={setPage}
-            onLimitChange={(nextLimit) => {
-              setLimit(nextLimit);
-              setPage(1);
-            }}
-          />
-        </div>
       ) : null}
     </div>
   );

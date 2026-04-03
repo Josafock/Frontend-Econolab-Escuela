@@ -15,8 +15,6 @@ export default function LoginForm() {
     errors: [],
     success: '',
     rol: '',
-    mfa: false,
-    email: '',
   });
 
   useEffect(() => {
@@ -24,20 +22,6 @@ export default function LoginForm() {
       state.errors.forEach((error: string) => toast.error(error));
     }
 
-    // 🔐 Caso MFA: no vamos a /home, sino a /auth/mfa
-    if (state?.mfa) {
-      if (state.success) {
-        toast(state.success);
-      }
-      if (state.email) {
-        router.push(`/auth/mfa?email=${encodeURIComponent(state.email)}`);
-      } else {
-        router.push('/auth/mfa');
-      }
-      return;
-    }
-
-    // ✅ Login normal
     if (state?.success) {
       toast.success(state.success);
       window.setTimeout(() => router.push('/home'), 900);
@@ -50,10 +34,8 @@ export default function LoginForm() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-white">
-      {/* Fondo limpio */}
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-white to-gray-50" />
 
-      {/* Campo de triángulos izquierdo */}
       <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-1/2 overflow-hidden opacity-30 lg:block">
         <div className="grid h-full w-full grid-cols-8 gap-3">
           {triangles.map((_, i) => (
@@ -62,7 +44,6 @@ export default function LoginForm() {
         </div>
       </div>
 
-      {/* Campo de triángulos derecho */}
       <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 overflow-hidden opacity-30 lg:block">
         <div className="grid h-full w-full grid-cols-8 gap-3">
           {triangles.map((_, i) => (
@@ -75,12 +56,9 @@ export default function LoginForm() {
         .clip-triangle { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
       `}</style>
 
-      {/* Contenido */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         <div className="mx-auto w-full max-w-xl">
-          {/* Tarjeta */}
           <div className="rounded-2xl border border-gray-200 bg-white shadow-lg">
-            {/* Encabezado de marca */}
             <div className="flex flex-col items-center justify-center gap-4 border-b border-gray-100 px-8 py-8">
               <h1 className="text-4xl font-bold text-black">
                 <span className="text-red-600">ECONO</span>LAB
@@ -96,10 +74,8 @@ export default function LoginForm() {
               </div>
             </div>
 
-            {/* Formulario */}
             <form action={dispatch} className="px-6 py-6 sm:px-8" noValidate>
               <div className="space-y-5">
-                {/* Email */}
                 <div>
                   <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">
                     Correo electrónico
@@ -118,7 +94,6 @@ export default function LoginForm() {
                   </div>
                 </div>
 
-                {/* Password */}
                 <div>
                   <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700">
                     Contraseña
@@ -144,7 +119,6 @@ export default function LoginForm() {
                   </div>
                 </div>
 
-                {/* Utilidades */}
                 <div className="flex items-center justify-between">
                   <Link
                     href="/auth/forgot-password"
@@ -154,7 +128,6 @@ export default function LoginForm() {
                   </Link>
                 </div>
 
-                {/* Submit - BOTÓN ACTUALIZADO */}
                 <button
                   type="submit"
                   disabled={pending}
@@ -170,7 +143,6 @@ export default function LoginForm() {
                   )}
                 </button>
 
-                {/* Divider */}
                 <div className="flex items-center gap-4 text-xs text-gray-400">
                   <div className="h-px w-full bg-gray-200" />
                   <span>o</span>
@@ -182,11 +154,10 @@ export default function LoginForm() {
                   onClick={() => {
                     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
                     if (!apiUrl) {
-                      console.error("Falta NEXT_PUBLIC_API_URL");
+                      console.error('Falta NEXT_PUBLIC_API_URL');
                       return;
                     }
                     window.location.href = `${apiUrl}/auth/google`;
-                    // => http://localhost:3000/api/auth/google
                   }}
                   className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-100"
                 >
@@ -194,9 +165,6 @@ export default function LoginForm() {
                   Continuar con Google
                 </button>
 
-
-
-                {/* Registro */}
                 <p className="text-center text-sm text-gray-600">
                   ¿No tienes una cuenta?{' '}
                   <Link
@@ -210,7 +178,6 @@ export default function LoginForm() {
             </form>
           </div>
 
-          {/* Nota legal */}
           <div className="mt-6 text-center text-xs text-gray-600">
             Al iniciar sesión, aceptas nuestros{' '}
             <Link href="/terms" className="text-red-600 hover:underline hover:text-red-700 transition-colors">

@@ -1,60 +1,79 @@
 'use client';
 
-import { 
-  Home, 
-  History, 
-  User, 
-  BookOpen, 
-  Users, 
-  Stethoscope,
+import {
+  ChevronRight,
+  ClipboardList,
+  Database,
+  FlaskConical,
+  History,
+  LayoutDashboard,
   LogOut,
   Menu,
+  Stethoscope,
+  TrendingUp,
+  UserRound,
+  Users,
   X,
-  Monitor,
-  Database,
-  TrendingUp
+  type LucideIcon,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { User as UserType } from '@/schemas';
 import { logout } from '@/actions/auth/logoutAction';
-import toast from 'react-hot-toast';
+
+type MenuItem = {
+  name: string;
+  icon: LucideIcon;
+  path: string;
+};
 
 export function Sidebar(user: UserType) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const rol = user.rol === 'admin' ? "Administrador" : "Recepcionista";
 
-  const menuItems = [
-    { name: 'Tablero', icon: <Home size={20} />, path: '/home' },
-    { name: 'Servicios', icon: <Monitor size={20} />, path: '/servicios' },
-    { name: 'Historial', icon: <History size={20} />, path: '/historial' },
-    { name: 'Mi perfil', icon: <User size={20} />, path: '/perfil' },
-    { name: 'Estudios', icon: <BookOpen size={20} />, path: '/estudios' },
-    { name: 'Pacientes', icon: <Users size={20} />, path: '/pacientes' },
-    { name: 'Medicos', icon: <Stethoscope size={20} />, path: '/medicos' },
-    ...(user.rol === 'admin'
-      ? [
-          { name: 'Admin BD', icon: <Database size={20} />, path: '/admin/database' },
-          { name: 'Prediccion de perdidas', icon: <TrendingUp size={20} />, path: '/admin/loss-prediction' },
-        ]
-      : []),
+  const rol =
+    user.rol === 'admin'
+      ? 'Administrador'
+      : user.rol === 'recepcionista'
+        ? 'Recepcionista'
+        : 'Sin rol';
+
+  const menuItems: MenuItem[] = [
+    { name: 'Inicio', icon: LayoutDashboard, path: '/home' },
+    { name: 'Servicios', icon: ClipboardList, path: '/servicios' },
+    { name: 'Mi perfil', icon: UserRound, path: '/perfil' },
+    { name: 'Estudios', icon: FlaskConical, path: '/estudios' },
+    { name: 'Pacientes', icon: Users, path: '/pacientes' },
+    { name: 'Medicos', icon: Stethoscope, path: '/medicos' },
   ];
+
+  const visibleMenuItems =
+    user.rol === 'admin'
+      ? [
+          menuItems[0],
+          menuItems[1],
+          { name: 'Historial', icon: History, path: '/historial' },
+          ...menuItems.slice(2),
+          { name: 'Admin BD', icon: Database, path: '/admin/database' },
+          { name: 'Prediccion', icon: TrendingUp, path: '/admin/loss-prediction' },
+        ]
+      : menuItems;
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      setIsOpen(window.innerWidth >= 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setIsOpen(!mobile);
     };
-    
+
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleSidebar = () => setIsOpen(o => !o);
+  const toggleSidebar = () => setIsOpen((current) => !current);
 
   const handleNavigation = (path: string) => {
     router.push(path);
@@ -64,100 +83,165 @@ export function Sidebar(user: UserType) {
   };
 
   const handleLogout = () => {
-    logout();
-    toast.success('Sesión cerrada correctamente');
+    void logout();
+  };
+
+  const isItemActive = (path: string) => {
+    if (path === '/home') {
+      return pathname === '/home' || pathname === '/';
+    }
+
+    if (path === '/admin/database') {
+      return pathname === '/admin/database' || pathname === '/admin/monitoring';
+    }
+
+    return pathname === path || pathname.startsWith(`${path}/`);
   };
 
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={toggleSidebar}
-        className="md:hidden fixed top-4 left-4 z-50 bg-red-600 text-white p-2 rounded-lg shadow-lg hover:bg-red-700 transition-colors"
+        className="fixed left-4 top-4 z-[70] rounded-2xl border border-red-200 bg-white p-3 text-red-600 shadow-lg shadow-red-200/40 transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-50 hover:shadow-xl hover:shadow-red-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 md:hidden"
+        aria-label={isOpen ? 'Cerrar menu lateral' : 'Abrir menu lateral'}
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Overlay */}
-      {isOpen && isMobile && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
-          onClick={toggleSidebar} 
+      {isOpen && isMobile ? (
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] md:hidden"
+          onClick={toggleSidebar}
         />
-      )}
+      ) : null}
 
-      {/* Sidebar */}
       <aside
         className={`${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0 transform transition-transform duration-300 ease-in-out
-          w-64 min-h-screen fixed md:relative z-40 border-r border-red-200 bg-white shadow-xl`}
+          fixed inset-y-0 left-0 z-50 w-[17rem] transform border-r border-red-100 bg-white/95 shadow-2xl shadow-red-200/30 backdrop-blur transition-transform duration-300 ease-in-out
+          md:translate-x-0 md:shadow-xl md:shadow-slate-200/40`}
       >
-        {/* Logo */}
-        <div className="p-6 text-center border-b border-red-100">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
-              <Stethoscope size={28} className="text-white" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold text-gray-900"><span className='text-red-600'>ECONO</span>LAB</h1>
-              <p className="text-xs text-gray-500">Sistema de Laboratorios</p>
+        <div className="flex h-full flex-col">
+          <div className="border-b border-red-100 px-6 py-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-600 shadow-lg shadow-red-600/20">
+                <Stethoscope size={26} className="text-white" />
+              </div>
+
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  <span className="text-red-600">ECONO</span>LAB
+                </h1>
+                <p className="text-xs text-gray-500">Sistema de laboratorios</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Navigation */}
-        <nav className="px-4 py-6 space-y-2">
-          {menuItems.map((item) => {
-            const isAdminDbRoute =
-              item.path === '/admin/database' &&
-              (pathname === '/admin/database' || pathname === '/admin/monitoring');
-            const isActive = pathname === item.path || isAdminDbRoute;
-            return (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <nav className="scroll-panel flex-1 space-y-2 overflow-y-auto px-4 py-6">
+              {visibleMenuItems.map((item) => {
+                const isActive = isItemActive(item.path);
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => handleNavigation(item.path)}
+                    onMouseEnter={() => {
+                      void router.prefetch(item.path);
+                    }}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 ${
+                      isActive
+                        ? 'border-red-200 bg-gradient-to-r from-red-50 via-white to-white text-red-700 shadow-sm shadow-red-100/80'
+                        : 'border-transparent text-gray-600 hover:-translate-y-0.5 hover:border-red-100 hover:bg-white hover:text-gray-900 hover:shadow-lg hover:shadow-red-100/70'
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`absolute inset-y-3 left-2 w-1 rounded-full transition-all duration-200 ${
+                        isActive
+                          ? 'bg-red-500 opacity-100'
+                          : 'bg-red-300 opacity-0 group-hover:opacity-100'
+                      }`}
+                    />
+
+                    <span
+                      aria-hidden="true"
+                      className={`absolute inset-0 bg-gradient-to-r transition-opacity duration-200 ${
+                        isActive
+                          ? 'from-red-100/70 via-transparent to-transparent opacity-100'
+                          : 'from-red-50/80 via-transparent to-transparent opacity-0 group-hover:opacity-100'
+                      }`}
+                    />
+
+                    <span
+                      className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
+                        isActive
+                          ? 'bg-white text-red-600 shadow-sm shadow-red-100'
+                          : 'bg-gray-100 text-gray-500 group-hover:bg-red-50 group-hover:text-red-600 group-hover:shadow-sm group-hover:shadow-red-100'
+                      }`}
+                    >
+                      <Icon size={18} />
+                    </span>
+
+                    <span className="relative z-10 truncate transition-transform duration-200 group-hover:translate-x-0.5">
+                      {item.name}
+                    </span>
+
+                    <span className="relative z-10 ml-auto flex items-center gap-2">
+                      {!isActive ? (
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-red-500 opacity-0 transition-all duration-200 group-hover:opacity-100">
+                          Ir
+                        </span>
+                      ) : null}
+
+                      <ChevronRight
+                        size={16}
+                        className={`transition-all duration-200 ${
+                          isActive
+                            ? 'translate-x-0 text-red-600'
+                            : 'translate-x-2 text-red-400 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                        }`}
+                      />
+
+                      {isActive ? (
+                        <span className="h-2 w-2 rounded-full bg-red-600 shadow-[0_0_0_4px_rgba(254,202,202,0.75)]" />
+                      ) : null}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="border-t border-red-100 bg-white px-4 pb-4 pt-4">
+              <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100">
+                    <UserRound size={18} className="text-red-600" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900">{user.nombre}</p>
+                    <p className="truncate text-xs text-gray-500">{user.email}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-600">
+                  {rol}
+                </div>
+              </div>
+
               <button
-                key={item.path}
-                onClick={() => handleNavigation(item.path)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all w-full text-left ${
-                  isActive
-                    ? 'bg-red-50 text-red-700 border border-red-200 shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                onClick={handleLogout}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-red-100 hover:bg-gray-50 hover:text-gray-900 hover:shadow-md hover:shadow-slate-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2"
               >
-                <span className={`${isActive ? 'text-red-600' : 'text-gray-400'}`}>
-                  {item.icon}
-                </span>
-                <span>{item.name}</span>
-                {isActive && (
-                  <div className="ml-auto w-2 h-2 bg-red-600 rounded-full"></div>
-                )}
+                <LogOut size={16} />
+                Cerrar sesión
               </button>
-            );
-          })}
-        </nav>
-
-        {/* User Info & Logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-red-100 bg-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                <User size={16} className="text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">{user.nombre}</p>
-                <p className="text-xs text-gray-500">{rol}</p>
-              </div>
             </div>
           </div>
-          
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium w-full
-              text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-          >
-            <LogOut size={16} />
-            Cerrar sesión
-          </button>
         </div>
       </aside>
     </>
   );
-};
+}

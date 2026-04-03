@@ -8,9 +8,9 @@ type LoginType = {
   errors: string[];
   success: string;
   rol: string;
-  mfa: boolean;
-  email: string;
 };
+
+const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
 export async function login(
   prevState: LoginType,
@@ -31,8 +31,6 @@ export async function login(
       errors,
       success: "",
       rol: "",
-      mfa: false,
-      email: "",
     };
   }
 
@@ -51,29 +49,14 @@ export async function login(
 
   const json = await res.json().catch(() => ({}));
 
-  // 🔐 Caso: el backend pide MFA
-  if (res.ok && json?.mfa) {
-    return {
-      errors: [],
-      success: json.message ?? "Se requiere verificación MFA",
-      rol: "",
-      mfa: true,
-      email: json.email ?? parsed.data.email,
-    };
-  }
-
-  // ❌ Errores normales (401, 400, etc)
   if (!res.ok) {
     return {
       ...normalizeErrors(json),
       success: "",
       rol: "",
-      mfa: false,
-      email: "",
     };
   }
 
-  // ✅ Login normal (sin MFA)
   const token: string | undefined = json.token ?? json.accessToken;
 
   if (!token) {
@@ -81,8 +64,6 @@ export async function login(
       errors: ["No se recibió el token de autenticación"],
       success: "",
       rol: "",
-      mfa: false,
-      email: "",
     };
   }
 
@@ -91,6 +72,8 @@ export async function login(
     value: token,
     httpOnly: true,
     path: "/",
+    sameSite: "lax",
+    maxAge: AUTH_COOKIE_MAX_AGE,
   });
 
   const { message } = successSchema.parse(json);
@@ -105,7 +88,5 @@ export async function login(
     errors: [],
     success: message,
     rol,
-    mfa: false,
-    email: "",
   };
 }
