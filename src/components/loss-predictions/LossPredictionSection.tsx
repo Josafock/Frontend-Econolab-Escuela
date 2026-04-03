@@ -104,7 +104,9 @@ function formatDate(value?: string | null, withTime = false) {
   if (!value) return "Sin registro";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return withTime ? parsed.toLocaleString("es-MX") : parsed.toLocaleDateString("es-MX");
+  return withTime
+    ? parsed.toLocaleString("es-MX")
+    : parsed.toLocaleDateString("es-MX", { timeZone: "UTC" });
 }
 
 function formatQuantity(value?: number | null) {
@@ -126,7 +128,11 @@ function formatRate(value?: number | null) {
 function formatMonthLabel(monthKey: string) {
   const [year, month] = monthKey.split("-").map((part) => Number(part));
   const parsed = new Date(Date.UTC(year, month - 1, 1));
-  return parsed.toLocaleDateString("es-MX", { month: "short", year: "numeric" });
+  return parsed.toLocaleDateString("es-MX", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 function formatPeriodDistance(period: number | null | undefined) {
@@ -158,7 +164,13 @@ function getSuggestionStyles(level?: PredictionResponse["logisticsSuggestion"]["
   return "border-gray-200 bg-gray-50 text-gray-800";
 }
 
-const todayIsoDate = new Date().toISOString().slice(0, 10);
+function getLocalInputDate() {
+  const now = new Date();
+  const timezoneOffsetInMs = now.getTimezoneOffset() * 60 * 1000;
+  return new Date(now.getTime() - timezoneOffsetInMs).toISOString().slice(0, 10);
+}
+
+const todayIsoDate = getLocalInputDate();
 
 export default function LossPredictionSection() {
   const [studies, setStudies] = useState<StudyOption[]>([]);
