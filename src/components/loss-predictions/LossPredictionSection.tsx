@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { Loader2, RefreshCw, Sparkles, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
   CartesianGrid,
@@ -110,7 +110,15 @@ function formatDate(value?: string | null, withTime = false) {
 function formatQuantity(value?: number | null) {
   if (value == null || Number.isNaN(value)) return "N/D";
   return new Intl.NumberFormat("es-MX", {
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatRate(value?: number | null) {
+  if (value == null || Number.isNaN(value)) return "N/D";
+  return new Intl.NumberFormat("es-MX", {
+    minimumFractionDigits: 4,
     maximumFractionDigits: 4,
   }).format(value);
 }
@@ -176,7 +184,7 @@ export default function LossPredictionSection() {
   const chartSeries = prediction?.chartSeries ?? [];
   const firstForecastMonth = chartSeries.find((point) => point.isForecast)?.monthKey ?? null;
 
-  const loadPrediction = async () => {
+  const loadPrediction = useCallback(async () => {
     if (!selectedStudyId || !selectedSupplyName) {
       setPrediction(null);
       return;
@@ -202,9 +210,9 @@ export default function LossPredictionSection() {
 
     setPrediction(json as PredictionResponse);
     setLoadingPrediction(false);
-  };
+  }, [fromDate, selectedStudyId, selectedSupplyName, toDate]);
 
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     if (!selectedStudyId) {
       setHistory(null);
       return;
@@ -227,9 +235,9 @@ export default function LossPredictionSection() {
 
     setHistory(json as HistoryResponse);
     setLoadingHistory(false);
-  };
+  }, [fromDate, selectedStudyId, selectedSupplyName, toDate]);
 
-  const loadSupplies = async (studyId: string) => {
+  const loadSupplies = useCallback(async (studyId: string) => {
     if (!studyId) {
       setSupplies([]);
       return;
@@ -249,9 +257,9 @@ export default function LossPredictionSection() {
     setSupplies(nextSupplies);
     setSelectedSupplyName((current) => (current && nextSupplies.includes(current) ? current : ""));
     setLoadingSupplies(false);
-  };
+  }, []);
 
-  const loadStudies = async () => {
+  const loadStudies = useCallback(async () => {
     setLoadingStudies(true);
     const res = await fetch("/api/loss-predictions/studies", { method: "GET", cache: "no-store" });
     const json = await res.json().catch(() => null);
@@ -266,7 +274,7 @@ export default function LossPredictionSection() {
     setStudies(data);
     setSelectedStudyId((current) => current || (data[0] ? String(data[0].id) : ""));
     setLoadingStudies(false);
-  };
+  }, []);
 
   const handleRefresh = async () => {
     await loadStudies();
@@ -338,17 +346,17 @@ export default function LossPredictionSection() {
 
   useEffect(() => {
     void loadStudies();
-  }, []);
+  }, [loadStudies]);
 
   useEffect(() => {
     if (!selectedStudyId) return;
     void loadSupplies(selectedStudyId);
-  }, [selectedStudyId]);
+  }, [loadSupplies, selectedStudyId]);
 
   useEffect(() => {
     if (!selectedStudyId) return;
     void loadHistory();
-  }, [selectedStudyId, selectedSupplyName, fromDate, toDate]);
+  }, [loadHistory, selectedStudyId]);
 
   useEffect(() => {
     if (!selectedStudyId || !selectedSupplyName) {
@@ -356,7 +364,7 @@ export default function LossPredictionSection() {
       return;
     }
     void loadPrediction();
-  }, [selectedStudyId, selectedSupplyName, fromDate, toDate]);
+  }, [loadPrediction, selectedStudyId, selectedSupplyName]);
 
   return (
     <div className="space-y-6">
@@ -369,7 +377,7 @@ export default function LossPredictionSection() {
                 Prediccion de perdidas
               </div>
               <h1 className="mt-4 text-3xl font-bold text-gray-900">Historico y prediccion del siguiente mes por insumo</h1>
-              <p className="mt-3 text-sm leading-6 text-gray-600">La vista concentra el historico disponible y una sola proyeccion para el siguiente mes, junto con una sugerencia logistica para compras.</p>
+              <p className="mt-3 text-sm leading-6 text-gray-600">La vista concentra el historico mensual disponible y ajusta una tendencia exponencial con todos los meses validos para estimar el siguiente mes, junto con una sugerencia logistica para compras.</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" onClick={() => void handleSeedSample()} disabled={seeding || loadingStudies} className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60">
@@ -407,7 +415,7 @@ export default function LossPredictionSection() {
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Tipo</p><p className="mt-3 text-xl font-bold text-gray-900">{selectedStudy ? getStudyTypeLabel(selectedStudy.type) : "N/D"}</p></div>
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Prediccion siguiente mes</p><p className="mt-3 text-xl font-bold text-gray-900">{formatQuantity(prediction?.summary.nextMonthPrediction ?? null)}</p><p className="mt-1 text-xs text-gray-500">{prediction?.summary.nextMonthLabel ? formatMonthLabel(prediction.summary.nextMonthLabel) : "Sin calcular"}</p></div>
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Ultima perdida</p><p className="mt-3 text-xl font-bold text-gray-900">{formatQuantity(prediction?.summary.lastRecordedLoss ?? null)}</p></div>
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Tasa k</p><p className="mt-3 text-xl font-bold text-gray-900">{prediction?.model.k != null ? prediction.model.k.toFixed(6) : "N/D"}</p></div>
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Tasa k</p><p className="mt-3 text-xl font-bold text-gray-900">{formatRate(prediction?.model.k ?? null)}</p><p className="mt-1 text-xs text-gray-500">Ajustada con el historico mensual completo</p></div>
           </div>
         </div>
 
@@ -438,7 +446,7 @@ export default function LossPredictionSection() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Historico y siguiente mes</h2>
-            <p className="mt-1 text-sm text-gray-600">La linea de prediccion se limita al siguiente mes para facilitar decisiones de compra.</p>
+            <p className="mt-1 text-sm text-gray-600">La tendencia se calcula con todo el historico mensual y la proyeccion visible se limita al siguiente mes para facilitar decisiones de compra.</p>
           </div>
           {(loadingHistory || loadingPrediction || seeding) ? <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600"><Loader2 className="h-3.5 w-3.5 animate-spin" />{seeding ? "Generando historial" : "Actualizando"}</div> : null}
         </div>
@@ -471,15 +479,15 @@ export default function LossPredictionSection() {
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Punto base y1</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Referencia inicial</p>
             <p className="mt-3 text-lg font-bold text-gray-900">{formatQuantity(prediction?.model.basePoint?.quantityLoss ?? null)}</p>
             <p className="mt-1 text-sm text-gray-600">{prediction?.model.basePoint?.label ?? "Sin dato"} · {formatDate(prediction?.model.basePoint?.date ?? null)}</p>
           </div>
           <div className="rounded-2xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Punto comparativo y2</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Referencia final</p>
             <p className="mt-3 text-lg font-bold text-gray-900">{formatQuantity(prediction?.model.comparisonPoint?.quantityLoss ?? null)}</p>
             <p className="mt-1 text-sm text-gray-600">{prediction?.model.comparisonPoint?.label ?? "Sin dato"} · {formatDate(prediction?.model.comparisonPoint?.date ?? null)}</p>
-            <p className="mt-2 text-xs text-gray-500">Delta temporal: {prediction?.model.basePoint && prediction?.model.comparisonPoint ? formatPeriodDistance(prediction.model.comparisonPoint.period - prediction.model.basePoint.period) : "N/D"}</p>
+            <p className="mt-2 text-xs text-gray-500">Ventana usada por el ajuste: {prediction?.model.basePoint && prediction?.model.comparisonPoint ? formatPeriodDistance(prediction.model.comparisonPoint.period - prediction.model.basePoint.period) : "N/D"}</p>
           </div>
         </div>
 
