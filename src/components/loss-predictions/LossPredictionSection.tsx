@@ -112,8 +112,8 @@ function formatDate(value?: string | null, withTime = false) {
 function formatQuantity(value?: number | null) {
   if (value == null || Number.isNaN(value)) return "N/D";
   return new Intl.NumberFormat("es-MX", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(value);
 }
 
@@ -191,10 +191,12 @@ export default function LossPredictionSection() {
   const [loadingPrediction, setLoadingPrediction] = useState(false);
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [monthsAhead, setMonthsAhead] = useState("1");
 
   const selectedStudy = studies.find((study) => study.id === Number(selectedStudyId)) ?? null;
   const chartSeries = prediction?.chartSeries ?? [];
   const firstForecastMonth = chartSeries.find((point) => point.isForecast)?.monthKey ?? null;
+  const forecastPoints = chartSeries.filter((point) => point.isForecast);
 
   const loadPrediction = useCallback(async () => {
     if (!selectedStudyId || !selectedSupplyName) {
@@ -206,7 +208,7 @@ export default function LossPredictionSection() {
     const params = new URLSearchParams({
       studyId: selectedStudyId,
       supplyName: selectedSupplyName,
-      monthsAhead: "1",
+      monthsAhead,
     });
     if (fromDate) params.set("fromDate", fromDate);
     if (toDate) params.set("toDate", toDate);
@@ -222,7 +224,7 @@ export default function LossPredictionSection() {
 
     setPrediction(json as PredictionResponse);
     setLoadingPrediction(false);
-  }, [fromDate, selectedStudyId, selectedSupplyName, toDate]);
+  }, [fromDate, monthsAhead, selectedStudyId, selectedSupplyName, toDate]);
 
   const loadHistory = useCallback(async () => {
     if (!selectedStudyId) {
@@ -408,8 +410,8 @@ export default function LossPredictionSection() {
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-gray-900">Filtro de analisis</h2>
-          <p className="mt-1 text-sm text-gray-600">Selecciona un estudio y un insumo para obtener la prediccion del siguiente mes.</p>
-          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <p className="mt-1 text-sm text-gray-600">Selecciona un estudio, un insumo y el horizonte para obtener la proyeccion de los proximos meses.</p>
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             <select value={selectedStudyId} onChange={(event) => setSelectedStudyId(event.target.value)} disabled={loadingStudies} className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 disabled:bg-gray-100">
               {loadingStudies ? <option value="">Cargando...</option> : null}
               {!loadingStudies && studies.length === 0 ? <option value="">Sin opciones</option> : null}
@@ -419,13 +421,18 @@ export default function LossPredictionSection() {
               <option value="">{loadingSupplies ? "Cargando insumos..." : "Selecciona un insumo"}</option>
               {supplies.map((supply) => <option key={supply} value={supply}>{supply}</option>)}
             </select>
+            <select value={monthsAhead} onChange={(event) => setMonthsAhead(event.target.value)} disabled={!selectedStudyId || !selectedSupplyName} className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 disabled:bg-gray-100">
+              <option value="1">Predecir 1 mes</option>
+              <option value="2">Predecir 2 meses</option>
+              <option value="3">Predecir 3 meses</option>
+            </select>
             <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900" />
             <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900" />
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Tipo</p><p className="mt-3 text-xl font-bold text-gray-900">{selectedStudy ? getStudyTypeLabel(selectedStudy.type) : "N/D"}</p></div>
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Prediccion siguiente mes</p><p className="mt-3 text-xl font-bold text-gray-900">{formatQuantity(prediction?.summary.nextMonthPrediction ?? null)}</p><p className="mt-1 text-xs text-gray-500">{prediction?.summary.nextMonthLabel ? formatMonthLabel(prediction.summary.nextMonthLabel) : "Sin calcular"}</p></div>
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Primera prediccion</p><p className="mt-3 text-xl font-bold text-gray-900">{formatQuantity(prediction?.summary.nextMonthPrediction ?? null)}</p><p className="mt-1 text-xs text-gray-500">{prediction?.summary.nextMonthLabel ? formatMonthLabel(prediction.summary.nextMonthLabel) : "Sin calcular"}</p></div>
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Ultima perdida</p><p className="mt-3 text-xl font-bold text-gray-900">{formatQuantity(prediction?.summary.lastRecordedLoss ?? null)}</p></div>
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Tasa k</p><p className="mt-3 text-xl font-bold text-gray-900">{formatRate(prediction?.model.k ?? null)}</p><p className="mt-1 text-xs text-gray-500">Ajustada con el historico mensual completo</p></div>
           </div>
@@ -457,8 +464,8 @@ export default function LossPredictionSection() {
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Historico y siguiente mes</h2>
-            <p className="mt-1 text-sm text-gray-600">La tendencia se calcula con todo el historico mensual y la proyeccion visible se limita al siguiente mes para facilitar decisiones de compra.</p>
+            <h2 className="text-xl font-semibold text-gray-900">Historico y proyeccion</h2>
+            <p className="mt-1 text-sm text-gray-600">La tendencia se calcula con todo el historico mensual y puede proyectarse hasta los proximos 3 meses para facilitar decisiones de compra.</p>
           </div>
           {(loadingHistory || loadingPrediction || seeding) ? <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600"><Loader2 className="h-3.5 w-3.5 animate-spin" />{seeding ? "Generando historial" : "Actualizando"}</div> : null}
         </div>
@@ -477,9 +484,25 @@ export default function LossPredictionSection() {
               <Legend />
               {firstForecastMonth ? <ReferenceArea x1={firstForecastMonth} x2={chartSeries[chartSeries.length - 1]?.monthKey} fill="#fee2e2" fillOpacity={0.38} /> : null}
               <Line type="monotone" dataKey="historicalLoss" name="Historico" stroke="#dc2626" strokeWidth={3} dot={{ r: 4, strokeWidth: 0 }} connectNulls />
-              <Line type="monotone" dataKey="predictedLoss" name="Siguiente mes" stroke="#b45309" strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 5, strokeWidth: 0 }} connectNulls />
+              <Line type="monotone" dataKey="predictedLoss" name="Proyeccion" stroke="#b45309" strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 5, strokeWidth: 0 }} connectNulls />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {forecastPoints.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500 md:col-span-3">
+              Aun no hay meses proyectados para mostrar.
+            </div>
+          ) : (
+            forecastPoints.map((point) => (
+              <div key={point.monthKey} className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Mes proyectado</p>
+                <p className="mt-3 text-xl font-bold text-amber-900">{formatQuantity(point.predictedLoss)}</p>
+                <p className="mt-1 text-sm text-amber-800">{formatMonthLabel(point.monthKey)}</p>
+              </div>
+            ))
+          )}
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
