@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import {
   ChevronRight,
   ClipboardList,
@@ -102,7 +103,7 @@ export function Sidebar(user: UserType) {
     <>
       <button
         onClick={toggleSidebar}
-        className="fixed left-4 top-4 z-[70] rounded-2xl border border-red-200 bg-white p-3 text-red-600 shadow-lg shadow-red-200/40 transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-50 hover:shadow-xl hover:shadow-red-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 md:hidden"
+        className="fixed left-4 top-4 z-[70] cursor-pointer rounded-2xl border border-red-200 bg-white p-3 text-red-600 shadow-lg shadow-red-200/40 transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-50 hover:shadow-xl hover:shadow-red-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 md:hidden"
         aria-label={isOpen ? 'Cerrar menu lateral' : 'Abrir menu lateral'}
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -118,21 +119,20 @@ export function Sidebar(user: UserType) {
       <aside
         className={`${isOpen ? 'translate-x-0' : '-translate-x-full'}
           fixed inset-y-0 left-0 z-50 w-[17rem] transform border-r border-red-100 bg-white/95 shadow-2xl shadow-red-200/30 backdrop-blur transition-transform duration-300 ease-in-out
-          md:translate-x-0 md:shadow-xl md:shadow-slate-200/40`}
+          md:left-[max(0px,calc((100vw-1920px)/2))] md:top-0 md:h-screen md:translate-x-0 md:shadow-xl md:shadow-slate-200/40`}
       >
         <div className="flex h-full flex-col">
           <div className="border-b border-red-100 px-6 py-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-600 shadow-lg shadow-red-600/20">
-                <Stethoscope size={26} className="text-white" />
-              </div>
-
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  <span className="text-red-600">ECONO</span>LAB
-                </h1>
-                <p className="text-xs text-gray-500">Sistema de laboratorios</p>
-              </div>
+            <div className="space-y-3">
+              <Image
+                src="/econolab-brand.png"
+                alt="Econolab"
+                width={240}
+                height={76}
+                className="h-auto w-full max-w-[220px] object-contain"
+                priority
+              />
+              <p className="pl-1 text-xs text-gray-500">Sistema de laboratorios</p>
             </div>
           </div>
 
@@ -150,7 +150,7 @@ export function Sidebar(user: UserType) {
                       void router.prefetch(item.path);
                     }}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 ${
+                    className={`group relative flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 ${
                       isActive
                         ? 'border-red-200 bg-gradient-to-r from-red-50 via-white to-white text-red-700 shadow-sm shadow-red-100/80'
                         : 'border-transparent text-gray-600 hover:-translate-y-0.5 hover:border-red-100 hover:bg-white hover:text-gray-900 hover:shadow-lg hover:shadow-red-100/70'
@@ -233,10 +233,10 @@ export function Sidebar(user: UserType) {
 
               <button
                 onClick={handleLogout}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-red-100 hover:bg-gray-50 hover:text-gray-900 hover:shadow-md hover:shadow-slate-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2"
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-red-100 hover:bg-gray-50 hover:text-gray-900 hover:shadow-md hover:shadow-slate-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2"
               >
                 <LogOut size={16} />
-                Cerrar sesión
+                Cerrar sesion
               </button>
             </div>
           </div>

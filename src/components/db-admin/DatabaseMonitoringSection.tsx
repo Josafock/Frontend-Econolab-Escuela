@@ -1,5 +1,6 @@
 "use client";
 
+import DatabaseLogsConsoleModal from "@/components/db-admin/DatabaseLogsConsoleModal";
 import { BarChart3, Database, HardDrive, Loader2, RefreshCw, TimerReset, Waypoints } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -204,6 +205,7 @@ function HorizontalBar({
 export default function DatabaseMonitoringSection() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [logsOpen, setLogsOpen] = useState(false);
   const [monitoring, setMonitoring] = useState<MonitoringResponse | null>(null);
 
   const loadMonitoring = async (silent = false) => {
@@ -331,6 +333,14 @@ export default function DatabaseMonitoringSection() {
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Actualizando..." : "Actualizar metricas"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLogsOpen(true)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15"
+            >
+              <Database className="h-4 w-4" />
+              Ver consola tecnica
             </button>
           </div>
         </div>
@@ -605,6 +615,8 @@ export default function DatabaseMonitoringSection() {
           </div>
         </div>
       </div>
+
+      <DatabaseLogsConsoleModal open={logsOpen} onClose={() => setLogsOpen(false)} />
     </section>
   );
 }
