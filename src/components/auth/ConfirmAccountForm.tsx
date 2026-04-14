@@ -140,8 +140,13 @@ export default function ConfirmAccountForm() {
               </div>
 
               <div className="mt-6 flex flex-col items-center gap-3 text-center">
-                <Image src="/LOGOSINCUENTAB.png" alt="Logo" width={56} height={56} className="h-14 w-14 rounded-md object-contain" />
-                <p className="text-xs text-gray-500">ECONOLAB</p>
+                <Image
+                  src="/econolab-brand.png"
+                  alt="Econolab"
+                  width={220}
+                  height={70}
+                  className="h-auto w-full max-w-[200px] object-contain"
+                />
               </div>
             </div>
           </div>

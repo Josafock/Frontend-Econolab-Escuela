@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, User, Lock } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
@@ -60,9 +61,14 @@ export default function LoginForm() {
         <div className="mx-auto w-full max-w-xl">
           <div className="rounded-2xl border border-gray-200 bg-white shadow-lg">
             <div className="flex flex-col items-center justify-center gap-4 border-b border-gray-100 px-8 py-8">
-              <h1 className="text-4xl font-bold text-black">
-                <span className="text-red-600">ECONO</span>LAB
-              </h1>
+              <Image
+                src="/econolab-brand.png"
+                alt="Econolab"
+                width={320}
+                height={100}
+                className="h-auto w-full max-w-[280px] object-contain sm:max-w-[320px]"
+                priority
+              />
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-red-200 bg-red-50">
                   <Lock className="h-6 w-6 text-red-600" />

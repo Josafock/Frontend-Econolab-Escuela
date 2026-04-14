@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import {
   Eye,
@@ -123,9 +124,14 @@ export default function RegisterForm() {
             {/* Encabezado de marca */}
             <div className="flex items-center justify-center gap-3 border-b border-gray-100 px-8 py-6">
               <div className="text-center">
-                <h1 className="text-4xl text-black font-bold">
-                  <span className="text-primary font-bold">ECONO</span>LAB
-                </h1>
+                <Image
+                  src="/econolab-brand.png"
+                  alt="Econolab"
+                  width={320}
+                  height={100}
+                  className="mx-auto h-auto w-full max-w-[280px] object-contain sm:max-w-[320px]"
+                  priority
+                />
                 <div className="mt-4 flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-md bg-red-600">
                     <UserRoundPlus className="h-6 w-6 text-white" />
