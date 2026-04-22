@@ -48,6 +48,7 @@ import {
   compareText,
   type SortDirection,
 } from "@/lib/table/sort";
+import { invalidateServicesCatalogsCache } from "@/lib/services/serviceCatalogCache";
 
 const AddDoctorModal = dynamic(() => import("@/components/medicos/AddDoctorModal"));
 const CatalogExcelManager = dynamic(
@@ -275,6 +276,7 @@ export default function DoctorsPageClient() {
       return false;
     }
 
+    invalidateServicesCatalogsCache();
     toast.success("Médico registrado con éxito.");
     await refreshDoctors();
     return true;
@@ -290,6 +292,7 @@ export default function DoctorsPageClient() {
       return false;
     }
 
+    invalidateServicesCatalogsCache();
     toast.success(doctor.isActive ? "Médico suspendido." : "Médico reactivado.");
     await refreshDoctors();
     return true;
@@ -314,6 +317,7 @@ export default function DoctorsPageClient() {
       return;
     }
 
+    invalidateServicesCatalogsCache();
     toast.success("Médico eliminado definitivamente.");
     await refreshDoctors();
   };
@@ -397,7 +401,10 @@ export default function DoctorsPageClient() {
                 }
                 return { ok: true };
               }}
-              onImportFinished={() => void refreshDoctors()}
+              onImportFinished={() => {
+                invalidateServicesCatalogsCache();
+                void refreshDoctors();
+              }}
               layout="flat"
             />
           </CatalogExcelModal>

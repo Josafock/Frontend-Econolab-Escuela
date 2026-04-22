@@ -78,6 +78,7 @@ import {
 } from "@/helpers/studies";
 import { useHashSectionScroll } from "@/hooks/useHashSectionScroll";
 import { buildStudyDetailHref } from "@/lib/routes/detail-routes";
+import { invalidateServicesCatalogsCache } from "@/lib/services/serviceCatalogCache";
 
 const CatalogExcelManager = dynamic(
   () => import("@/components/ui/CatalogExcelManager"),
@@ -710,6 +711,7 @@ export default function StudyDetailClient({
       return;
     }
 
+    invalidateServicesCatalogsCache();
     setStudy(response.data.data);
     setPackageStudyIds(response.data.data.packageStudyIds ?? []);
     toast.success("Contenido del paquete actualizado con exito.");
@@ -740,6 +742,7 @@ export default function StudyDetailClient({
       return;
     }
 
+    invalidateServicesCatalogsCache();
     setStudy(response.data.data);
     setPackageStudyIds(response.data.data.packageStudyIds ?? []);
     setFormData(mapStudyToForm(response.data.data));
@@ -766,6 +769,7 @@ export default function StudyDetailClient({
       return;
     }
 
+    invalidateServicesCatalogsCache();
     setStudy(response.data.data);
     setFormData(mapStudyToForm(response.data.data));
     setUseAutoCode(false);
@@ -795,6 +799,7 @@ export default function StudyDetailClient({
       return;
     }
 
+    invalidateServicesCatalogsCache();
     toast.success("Estudio eliminado del catálogo.");
     router.push("/estudios");
   };

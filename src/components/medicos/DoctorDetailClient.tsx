@@ -39,6 +39,7 @@ import {
 } from "@/components/medicos/doctorFormUtils";
 import { useHashSectionScroll } from "@/hooks/useHashSectionScroll";
 import { buildDoctorDetailHref } from "@/lib/routes/detail-routes";
+import { invalidateServicesCatalogsCache } from "@/lib/services/serviceCatalogCache";
 
 type DoctorDetailClientProps = {
   doctorId: number;
@@ -182,6 +183,7 @@ export default function DoctorDetailClient({
       return;
     }
 
+    invalidateServicesCatalogsCache();
     setDoctor(response.data.data);
     setFormData(mapDoctorToForm(response.data.data));
     setTouched({});
@@ -204,6 +206,7 @@ export default function DoctorDetailClient({
       return;
     }
 
+    invalidateServicesCatalogsCache();
     setDoctor(response.data.data);
     toast.success(nextStatus ? "Medico reactivado." : "Medico suspendido.");
     await refreshDoctor();

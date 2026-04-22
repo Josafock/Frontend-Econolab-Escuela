@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   ArrowLeft,
@@ -65,6 +65,10 @@ import {
   isLocalServiceId,
   mergeLocalServiceCreatePayload,
 } from "@/features/services/offline/local-service-sync";
+import {
+  SERVICES_CATALOGS_CACHE_KEY,
+  getServicesCatalogRevision,
+} from "@/lib/services/serviceCatalogCache";
 import { buildServiceDetailHref } from "@/lib/routes/detail-routes";
 
 const AddServiceModal = dynamic(
@@ -235,6 +239,7 @@ export default function ServiceDetailPage() {
     doctors: [],
     studies: [],
   });
+  const loadedCatalogRevisionRef = useRef<number | null>(null);
   const [resultDrafts, setResultDrafts] = useState<ResultState>({});
   const [studyDetailsMap, setStudyDetailsMap] = useState<DetailState>({});
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -408,15 +413,31 @@ export default function ServiceDetailPage() {
   }, [isOnline, persistServiceSnapshot, service, snapshotKey]);
 
   useEffect(() => {
-    if (!openEditModal || catalogsLoaded) {
+    if (!openEditModal) {
       return;
     }
 
-    const cachedCatalogs = readOfflineSnapshot<CatalogsState>("services:catalogs");
+    const currentCatalogRevision = getServicesCatalogRevision();
+    if (
+      catalogsLoaded &&
+      loadedCatalogRevisionRef.current === currentCatalogRevision
+    ) {
+      return;
+    }
+
+    const cachedCatalogs = readOfflineSnapshot<CatalogsState>(
+      SERVICES_CATALOGS_CACHE_KEY,
+    );
 
     if (!isOnline && cachedCatalogs) {
       setCatalogs(cachedCatalogs.value);
       setCatalogsLoaded(true);
+      setCatalogsLoading(false);
+      loadedCatalogRevisionRef.current = currentCatalogRevision;
+      return;
+    }
+
+    if (!isOnline) {
       setCatalogsLoading(false);
       return;
     }
@@ -442,14 +463,16 @@ export default function ServiceDetailPage() {
       setCatalogsLoading(false);
 
       if (hasSuccessfulCatalogLoad) {
-        writeOfflineSnapshot("services:catalogs", {
+        writeOfflineSnapshot(SERVICES_CATALOGS_CACHE_KEY, {
           patients: patientsResponse.ok ? patientsResponse.data.data : [],
           doctors: doctorsResponse.ok ? doctorsResponse.data.data : [],
           studies: studiesResponse.ok ? studiesResponse.data.data : [],
         });
+        loadedCatalogRevisionRef.current = currentCatalogRevision;
       } else if (cachedCatalogs) {
         setCatalogs(cachedCatalogs.value);
         setCatalogsLoaded(true);
+        loadedCatalogRevisionRef.current = currentCatalogRevision;
       }
     };
 

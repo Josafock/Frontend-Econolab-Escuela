@@ -45,6 +45,7 @@ import {
   type ServiceFormValues,
   validateServiceForm,
 } from "@/components/servicios/serviceFormUtils";
+import { invalidateServicesCatalogsCache } from "@/lib/services/serviceCatalogCache";
 
 const AddPatientModal = dynamic(
   () => import("@/components/pacientes/AddPatientModal"),
@@ -378,6 +379,7 @@ export default function AddServiceModal({
     }
 
     const patient = response.data.data;
+    invalidateServicesCatalogsCache();
     setLocalPatients((current) => {
       const filtered = current.filter((item) => item.id !== patient.id);
       return [patient, ...filtered];
@@ -403,6 +405,7 @@ export default function AddServiceModal({
     }
 
     const doctor = response.data.data;
+    invalidateServicesCatalogsCache();
     setLocalDoctors((current) => {
       const filtered = current.filter((item) => item.id !== doctor.id);
       return [doctor, ...filtered];

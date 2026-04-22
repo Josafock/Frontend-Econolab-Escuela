@@ -55,6 +55,7 @@ import {
   getStudyTypeColor,
   getStudyTypeLabel,
 } from "@/helpers/studies";
+import { invalidateServicesCatalogsCache } from "@/lib/services/serviceCatalogCache";
 
 const AddStudyModal = dynamic(
   () => import("@/components/estudios/AddStudyModal"),
@@ -301,6 +302,7 @@ export default function StudiesPageClient() {
       return false;
     }
 
+    invalidateServicesCatalogsCache();
     toast.success("Estudio registrado con exito.");
     await refreshStudies();
     return true;
@@ -320,6 +322,7 @@ export default function StudiesPageClient() {
       return false;
     }
 
+    invalidateServicesCatalogsCache();
     toast.success(
       nextStatus === "active" ? "Estudio activado." : "Estudio suspendido.",
     );
@@ -346,6 +349,7 @@ export default function StudiesPageClient() {
       return;
     }
 
+    invalidateServicesCatalogsCache();
     toast.success("Estudio eliminado del catálogo.");
     await refreshStudies();
   };
@@ -413,7 +417,10 @@ export default function StudiesPageClient() {
 
                 return { ok: true };
               }}
-              onImportFinished={() => void refreshStudies()}
+              onImportFinished={() => {
+                invalidateServicesCatalogsCache();
+                void refreshStudies();
+              }}
               layout="flat"
             />
           </CatalogExcelModal>

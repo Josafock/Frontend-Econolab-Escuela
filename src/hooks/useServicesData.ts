@@ -19,6 +19,10 @@ import {
   getQueryCache,
   setQueryCache,
 } from '@/hooks/_lib/clientQueryCache';
+import {
+  SERVICES_CATALOGS_CACHE_KEY,
+  getServicesCatalogRevision,
+} from '@/lib/services/serviceCatalogCache';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useOffline } from '@/lib/offline/network-state';
 import {
@@ -35,7 +39,7 @@ import {
   SYNC_QUEUE_EVENT,
   type SyncQueueEventDetail,
 } from '@/lib/offline/sync-runner';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 
 export type UiService = {
@@ -70,9 +74,7 @@ type CatalogsState = {
 };
 
 const SERVICES_CACHE_PREFIX = 'services:list:';
-const CATALOGS_CACHE_KEY = 'services:catalogs';
 const SERVICES_SNAPSHOT_PREFIX = 'services:list:';
-const SERVICES_CATALOGS_SNAPSHOT_KEY = 'services:catalogs';
 
 function formatDateTime(value?: string | null): string {
   if (!value) return 'N/D';
@@ -304,6 +306,7 @@ export function useServicesData(searchTerm: string, filters: ServicesFilters) {
     doctors: [],
     studies: [],
   });
+  const loadedCatalogRevisionRef = useRef<number | null>(null);
   const [dataSource, setDataSource] = useState<'live' | 'snapshot'>('live');
   const [snapshotUpdatedAt, setSnapshotUpdatedAt] = useState<number | null>(null);
 
@@ -405,11 +408,16 @@ export function useServicesData(searchTerm: string, filters: ServicesFilters) {
   );
 
   const loadFormCatalogs = useCallback(async () => {
-    if (catalogsLoaded) {
+    const currentCatalogRevision = getServicesCatalogRevision();
+
+    if (
+      catalogsLoaded &&
+      loadedCatalogRevisionRef.current === currentCatalogRevision
+    ) {
       return;
     }
 
-    const cached = getQueryCache<CatalogsState>(CATALOGS_CACHE_KEY);
+    const cached = getQueryCache<CatalogsState>(SERVICES_CATALOGS_CACHE_KEY);
     const cachedCatalogs = cached?.data ?? {
       patients: [],
       doctors: [],
@@ -420,17 +428,24 @@ export function useServicesData(searchTerm: string, filters: ServicesFilters) {
       setCatalogs(cachedCatalogs);
       setCatalogsLoading(false);
       setCatalogsLoaded(true);
+      loadedCatalogRevisionRef.current = currentCatalogRevision;
       return;
     }
 
     const cachedSnapshot = readOfflineSnapshot<CatalogsState>(
-      SERVICES_CATALOGS_SNAPSHOT_KEY,
+      SERVICES_CATALOGS_CACHE_KEY,
     );
     if (!isOnline && cachedSnapshot) {
       setCatalogs(cachedSnapshot.value);
       setCatalogsLoading(false);
       setCatalogsLoaded(true);
-      setQueryCache(CATALOGS_CACHE_KEY, cachedSnapshot.value);
+      setQueryCache(SERVICES_CATALOGS_CACHE_KEY, cachedSnapshot.value);
+      loadedCatalogRevisionRef.current = currentCatalogRevision;
+      return;
+    }
+
+    if (!isOnline) {
+      setCatalogsLoading(false);
       return;
     }
 
@@ -453,12 +468,14 @@ export function useServicesData(searchTerm: string, filters: ServicesFilters) {
     setCatalogs(nextCatalogs);
     setCatalogsLoading(false);
     setCatalogsLoaded(hasSuccessfulCatalogLoad);
-    setQueryCache(CATALOGS_CACHE_KEY, nextCatalogs);
+    setQueryCache(SERVICES_CATALOGS_CACHE_KEY, nextCatalogs);
     if (hasSuccessfulCatalogLoad) {
-      writeOfflineSnapshot(SERVICES_CATALOGS_SNAPSHOT_KEY, nextCatalogs);
+      writeOfflineSnapshot(SERVICES_CATALOGS_CACHE_KEY, nextCatalogs);
+      loadedCatalogRevisionRef.current = currentCatalogRevision;
     } else if (cachedSnapshot) {
       setCatalogs(cachedSnapshot.value);
       setCatalogsLoaded(true);
+      loadedCatalogRevisionRef.current = currentCatalogRevision;
     }
   }, [catalogsLoaded, isOnline]);
 

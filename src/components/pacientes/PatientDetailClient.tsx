@@ -41,6 +41,7 @@ import {
 } from "@/components/pacientes/patientFormUtils";
 import { useHashSectionScroll } from "@/hooks/useHashSectionScroll";
 import { buildPatientDetailHref } from "@/lib/routes/detail-routes";
+import { invalidateServicesCatalogsCache } from "@/lib/services/serviceCatalogCache";
 
 type PatientDetailClientProps = {
   patientId: number;
@@ -199,6 +200,7 @@ export default function PatientDetailClient({
       return;
     }
 
+    invalidateServicesCatalogsCache();
     setPatient(response.data.data);
     setFormData(mapPatientToForm(response.data.data));
     setTouched({});
@@ -223,6 +225,7 @@ export default function PatientDetailClient({
       return;
     }
 
+    invalidateServicesCatalogsCache();
     setPatient(response.data.data);
     toast.success(nextStatus ? "Paciente reactivado." : "Paciente suspendido.");
     await refreshPatient();
