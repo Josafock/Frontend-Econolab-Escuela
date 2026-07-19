@@ -9,7 +9,9 @@ import {
   Hash,
   Percent,
   RefreshCw,
+  ShieldCheck,
   Tag,
+  TestTube2,
 } from 'lucide-react';
 import {
   REQUIRED_STUDY_FIELDS,
@@ -453,6 +455,52 @@ export default function StudyFormFields({
                 disabled={disabled}
               />
               <ErrorText message={indicadorError.message} />
+            </div>
+
+            <div>
+              <FieldLabel>Tipo de muestra</FieldLabel>
+              <div className="relative">
+                <TestTube2 className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <select
+                  name="tipoMuestra"
+                  value={formData.tipoMuestra}
+                  onChange={onChange}
+                  onBlur={onBlur}
+                  className={`${getInputClass(false, true)} modal-select appearance-none`}
+                  disabled={disabled}
+                >
+                  <option value="unknown">Sin especificar</option>
+                  <option value="blood">Sangre total</option>
+                  <option value="serum">Suero</option>
+                  <option value="plasma">Plasma</option>
+                  <option value="urine">Orina</option>
+                  <option value="stool">Heces</option>
+                  <option value="swab">Hisopo</option>
+                  <option value="other">Otra / sin especificar</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Procesamiento especial</FieldLabel>
+              <div className="relative">
+                <ShieldCheck className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-red-600" />
+                <select
+                  name="procesamientoEspecial"
+                  value={formData.procesamientoEspecial}
+                  onChange={onChange}
+                  onBlur={onBlur}
+                  className={`${getInputClass(false, true)} modal-select appearance-none`}
+                  disabled={disabled}
+                >
+                  <option value="unknown">Sin especificar</option>
+                  <option value="yes">Sí requiere</option>
+                  <option value="no">No requiere</option>
+                </select>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Preparación, conservación o equipo adicional.
+              </p>
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import {
+  Boxes,
   ChevronRight,
   ClipboardList,
   Database,
@@ -59,6 +60,7 @@ export function Sidebar(user: UserType) {
           ...menuItems.slice(2),
           { name: 'Admin BD', icon: Database, path: '/admin/database' },
           { name: 'Prediccion', icon: TrendingUp, path: '/admin/loss-prediction' },
+          { name: 'Clustering', icon: Boxes, path: '/admin/clustering' },
         ]
       : menuItems;
 

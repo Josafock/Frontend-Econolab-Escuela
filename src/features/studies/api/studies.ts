@@ -4,6 +4,15 @@ import { fetchApi, type ApiResult } from "@/actions/_lib/api";
 
 export type StudyType = "study" | "package" | "other";
 export type StudyStatus = "active" | "suspended";
+export type StudySampleType =
+  | "unknown"
+  | "blood"
+  | "serum"
+  | "plasma"
+  | "urine"
+  | "stool"
+  | "swab"
+  | "other";
 export type StudyStatusFilter = StudyStatus | "all";
 export type StudyTypeFilter = StudyType | "all";
 export type StudyDetailDataType = "category" | "parameter";
@@ -22,6 +31,8 @@ export type Study = {
   otherPrice: number;
   defaultDiscountPercent: number;
   method?: string | null;
+  sampleType: StudySampleType;
+  requiresSpecialProcessing?: boolean | null;
   indicator?: string | null;
   packageStudyIds?: number[];
   status: StudyStatus;
@@ -58,6 +69,8 @@ export type CreateStudyPayload = {
   otherPrice: number;
   defaultDiscountPercent: number;
   method?: string;
+  sampleType?: StudySampleType;
+  requiresSpecialProcessing?: boolean;
   indicator?: string;
   packageStudyIds?: number[];
   status?: StudyStatus;

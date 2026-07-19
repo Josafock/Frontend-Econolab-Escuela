@@ -2,6 +2,7 @@ import type {
   CreateStudyPayload,
   Study,
   StudyStatus,
+  StudySampleType,
   StudyType,
   UpdateStudyPayload,
 } from "@/features/studies/api/studies";
@@ -26,6 +27,8 @@ export type StudyFormValues = {
   otros: string;
   descuento: string;
   metodo: string;
+  tipoMuestra: StudySampleType;
+  procesamientoEspecial: "unknown" | "yes" | "no";
   indicador: string;
   estatus: StudyStatus;
 };
@@ -117,6 +120,8 @@ export function createEmptyStudyForm(initialType: StudyType = "study"): StudyFor
     otros: "0.00",
     descuento: "0.00",
     metodo: "",
+    tipoMuestra: "unknown",
+    procesamientoEspecial: "unknown",
     indicador: "",
     estatus: "active",
   };
@@ -136,6 +141,8 @@ export function createTouchedStudyForm(): StudyFormTouched {
     otros: true,
     descuento: true,
     metodo: true,
+    tipoMuestra: true,
+    procesamientoEspecial: true,
     indicador: true,
     estatus: true,
   };
@@ -221,6 +228,12 @@ export function mapFormToCreateStudyPayload(
     otherPrice: Number(values.otros),
     defaultDiscountPercent: Number(values.descuento),
     method: isPackage ? undefined : normalizeText(values.metodo),
+    sampleType: isPackage ? undefined : values.tipoMuestra,
+    requiresSpecialProcessing: isPackage
+      ? undefined
+      : values.procesamientoEspecial === "unknown"
+        ? undefined
+        : values.procesamientoEspecial === "yes",
     indicator: isPackage ? undefined : normalizeText(values.indicador),
     status: values.estatus,
   };
@@ -247,6 +260,13 @@ export function mapStudyToForm(study: Study): StudyFormValues {
     otros: Number(study.otherPrice ?? 0).toFixed(2),
     descuento: Number(study.defaultDiscountPercent ?? 0).toFixed(2),
     metodo: study.method ?? "",
+    tipoMuestra: study.sampleType ?? "unknown",
+    procesamientoEspecial:
+      study.requiresSpecialProcessing == null
+        ? "unknown"
+        : study.requiresSpecialProcessing
+          ? "yes"
+          : "no",
     indicador: study.indicator ?? "",
     estatus: study.status,
   };
