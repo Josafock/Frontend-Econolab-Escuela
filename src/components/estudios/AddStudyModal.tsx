@@ -10,12 +10,15 @@ import {
 } from "react";
 import { Microscope } from "lucide-react";
 import toast from "react-hot-toast";
-import type {
-  CreateStudyPayload,
-  StudyType,
+import {
+  getSuggestedStudyCode,
+  type CreateStudyPayload,
+  type StudyEstimation,
+  type StudyType,
 } from "@/features/studies/api/studies";
-import { getSuggestedStudyCode } from "@/features/studies/api/studies";
 import StudyFormFields from "@/components/estudios/StudyFormFields";
+import StudyEstimationPanel from "@/components/estudios/StudyEstimationPanel";
+import { minutesToTimeValue } from "@/helpers/studies";
 import {
   createEmptyStudyForm,
   createTouchedStudyForm,
@@ -56,8 +59,8 @@ export default function AddStudyModal({
   );
   const [useAutoCode, setUseAutoCode] = useState(true);
   const [touched, setTouched] = useState<StudyFormTouched>({});
-  const entityLabel = initialType === "package" ? "paquete" : "estudio";
-  const isPackage = initialType === "package";
+  const entityLabel = formData.tipo === "package" ? "paquete" : "estudio";
+  const isPackage = formData.tipo === "package";
 
   const errors = useMemo(() => validateStudyForm(formData), [formData]);
 
@@ -166,6 +169,16 @@ export default function AddStudyModal({
     );
   };
 
+  const handleApplyEstimation = (estimation: StudyEstimation) => {
+    // Aqui se ocupan las dos salidas del modelo en el formulario real.
+    setFormData((current) => ({
+      ...current,
+      precioNormal: estimation.suggestedNormalPrice.toFixed(2),
+      duracion: minutesToTimeValue(estimation.suggestedDurationMinutes),
+    }));
+    toast.success("Precio y duración sugeridos aplicados al formulario.");
+  };
+
   return (
     <Modal>
       <ModalPanel widthClassName="max-w-6xl">
@@ -200,6 +213,16 @@ export default function AddStudyModal({
               onGenerateCode={handleGenerateCode}
               disabled={isSaving}
               compact
+              estimationPanel={
+                !isPackage ? (
+                  <StudyEstimationPanel
+                    type={formData.tipo}
+                    method={formData.metodo}
+                    disabled={isSaving}
+                    onApply={handleApplyEstimation}
+                  />
+                ) : undefined
+              }
             />
           </ModalBody>
 

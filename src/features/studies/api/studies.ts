@@ -98,6 +98,33 @@ export type StudyDetailMutationResponse = {
   data: StudyDetail;
 };
 
+export type StudyEstimationPayload = {
+  type: StudyType;
+  parameterCount: number;
+  method?: string;
+};
+
+export type StudyEstimation = {
+  suggestedNormalPrice: number;
+  suggestedDurationMinutes: number;
+  priceRange: { min: number; max: number };
+  durationRangeMinutes: { min: number; max: number };
+  model: {
+    algorithm: "linear_regression";
+    version: string;
+    trainingSamples: number;
+    priceMeanAbsoluteError: number;
+    durationMeanAbsoluteError: number;
+    featuresUsed: string[];
+  };
+  warnings: string[];
+};
+
+type StudyEstimationResponse = {
+  message: string;
+  data: StudyEstimation;
+};
+
 export async function getStudies(params?: {
   search?: string;
   page?: number;
@@ -131,6 +158,16 @@ export async function getSuggestedStudyCode(
   return fetchApi<{ code: string }>(
     `/studies/next-code?type=${encodeURIComponent(type)}`,
   );
+}
+
+/** Manda los datos del formulario al modelo de regresion del backend. */
+export async function estimateStudy(
+  payload: StudyEstimationPayload,
+): Promise<ApiResult<StudyEstimationResponse>> {
+  return fetchApi<StudyEstimationResponse>("/studies/estimate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function getStudyById(id: number): Promise<ApiResult<Study>> {

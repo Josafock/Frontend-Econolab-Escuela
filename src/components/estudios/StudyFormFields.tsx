@@ -36,6 +36,7 @@ type StudyFormFieldsProps = {
   onGenerateCode?: () => void;
   disabled?: boolean;
   compact?: boolean;
+  estimationPanel?: ReactNode;
 };
 
 const baseInputClassName =
@@ -98,6 +99,7 @@ export default function StudyFormFields({
   onGenerateCode,
   disabled = false,
   compact = false,
+  estimationPanel,
 }: StudyFormFieldsProps) {
   const isPackage = formData.tipo === 'package';
   const sectionClassName = compact
@@ -296,6 +298,8 @@ export default function StudyFormFields({
           </div>
         </div>
       </div>
+
+      {estimationPanel}
 
       <div className={sectionClassName}>
         <div className="mb-4">
