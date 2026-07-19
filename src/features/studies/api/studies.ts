@@ -106,15 +106,12 @@ export type StudyEstimationPayload = {
 
 export type StudyEstimation = {
   suggestedNormalPrice: number;
-  suggestedDurationMinutes: number;
   priceRange: { min: number; max: number };
-  durationRangeMinutes: { min: number; max: number };
   model: {
     algorithm: "linear_regression";
     version: string;
     trainingSamples: number;
     priceMeanAbsoluteError: number;
-    durationMeanAbsoluteError: number;
     featuresUsed: string[];
   };
   warnings: string[];

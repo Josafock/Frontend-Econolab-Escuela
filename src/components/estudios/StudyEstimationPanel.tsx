@@ -1,6 +1,6 @@
 "use client";
 
-import { BrainCircuit, Calculator, Clock3, DollarSign } from "lucide-react";
+import { BrainCircuit, Calculator, DollarSign } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import {
@@ -8,7 +8,6 @@ import {
   type StudyEstimation,
   type StudyType,
 } from "@/features/studies/api/studies";
-import { minutesToTimeValue } from "@/helpers/studies";
 
 type StudyEstimationPanelProps = {
   type: StudyType;
@@ -74,8 +73,8 @@ export default function StudyEstimationPanel({
               Estimación con regresión lineal
             </h3>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-gray-600">
-              El modelo usa estudios anteriores para sugerir el precio normal y
-              la duración. Los valores se pueden modificar antes de registrar.
+              El modelo usa estudios anteriores para sugerir el precio normal.
+              El valor se puede modificar antes de registrar.
             </p>
           </div>
         </div>
@@ -107,7 +106,7 @@ export default function StudyEstimationPanel({
       </div>
 
       {estimation ? (
-        <div className="mt-4 grid gap-3 border-t border-red-100 pt-4 lg:grid-cols-[1fr_1fr_auto]">
+        <div className="mt-4 grid gap-3 border-t border-red-100 pt-4 lg:grid-cols-[1fr_auto]">
           <div className="rounded-xl border border-gray-200 bg-white p-3">
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <DollarSign className="h-4 w-4 text-red-600" /> Precio sugerido
@@ -121,28 +120,19 @@ export default function StudyEstimationPanel({
             </p>
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white p-3">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <Clock3 className="h-4 w-4 text-red-600" /> Duración sugerida
-            </div>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">
-              {minutesToTimeValue(estimation.suggestedDurationMinutes)} h
-            </p>
-            <p className="mt-1 text-xs text-gray-500">
-              Modelo entrenado con {estimation.model.trainingSamples} estudios
-            </p>
-          </div>
-
           <button
             type="button"
             onClick={() => onApply(estimation)}
             disabled={disabled}
             className="rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
           >
-            Usar valores sugeridos
+            Usar precio sugerido
           </button>
+          <p className="text-xs text-gray-500 lg:col-span-2">
+            Modelo entrenado con {estimation.model.trainingSamples} estudios.
+          </p>
           {estimation.warnings.length > 0 ? (
-            <p className="text-xs leading-5 text-amber-700 lg:col-span-3">
+            <p className="text-xs leading-5 text-amber-700 lg:col-span-2">
               Nota sobre los datos: {estimation.warnings.join(" ")}
             </p>
           ) : null}

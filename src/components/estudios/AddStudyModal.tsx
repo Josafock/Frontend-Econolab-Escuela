@@ -18,7 +18,6 @@ import {
 } from "@/features/studies/api/studies";
 import StudyFormFields from "@/components/estudios/StudyFormFields";
 import StudyEstimationPanel from "@/components/estudios/StudyEstimationPanel";
-import { minutesToTimeValue } from "@/helpers/studies";
 import {
   createEmptyStudyForm,
   createTouchedStudyForm,
@@ -170,13 +169,12 @@ export default function AddStudyModal({
   };
 
   const handleApplyEstimation = (estimation: StudyEstimation) => {
-    // Aqui se ocupan las dos salidas del modelo en el formulario real.
+    // Aqui se ocupa la salida del modelo en el formulario real.
     setFormData((current) => ({
       ...current,
       precioNormal: estimation.suggestedNormalPrice.toFixed(2),
-      duracion: minutesToTimeValue(estimation.suggestedDurationMinutes),
     }));
-    toast.success("Precio y duración sugeridos aplicados al formulario.");
+    toast.success("Precio sugerido aplicado al formulario.");
   };
 
   return (
