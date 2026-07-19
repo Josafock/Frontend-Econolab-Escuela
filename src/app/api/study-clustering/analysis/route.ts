@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-export async function GET(request: Request) {
+export async function GET() {
   const token = (await cookies()).get("ECONOLAB_TOKEN")?.value;
   if (!token) {
     return Response.json(
@@ -16,14 +16,9 @@ export async function GET(request: Request) {
     );
   }
 
-  const incomingUrl = new URL(request.url);
   const backendUrl = new URL(
     `${process.env.API_URL}/study-clustering/analysis`,
   );
-
-  for (const [key, value] of incomingUrl.searchParams.entries()) {
-    backendUrl.searchParams.set(key, value);
-  }
 
   try {
     const response = await fetch(backendUrl.toString(), {

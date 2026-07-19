@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const LABELS: Record<string, string> = {
   admin: "Administración",
-  clustering: "Clustering de estudios",
+  clustering: "Segmentación operativa de estudios",
   database: "Base de datos",
   monitoring: "Monitoreo",
   "loss-prediction": "Predicción",

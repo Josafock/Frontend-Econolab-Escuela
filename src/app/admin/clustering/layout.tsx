@@ -4,7 +4,7 @@ import { verifySession } from "@/auth/dal";
 import ProtectedLayoutShell from "@/components/ui/ProtectedLayoutShell";
 
 export const metadata: Metadata = {
-  title: "Clustering de estudios - Econolab",
+  title: "Segmentación operativa de estudios - Econolab",
 };
 
 export default async function StudyClusteringLayout({
