@@ -121,7 +121,7 @@ type StudySortKey =
   | "status";
 
 async function loadStudiesCatalog(): Promise<StudiesState> {
-  const response = await getStudies({ limit: 1000 });
+  const response = await getStudies({ limit: 2000 });
 
   if (!response.ok) {
     return {

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { CollectionContentSkeleton } from "@/components/ui/PageSkeletons";
 import ResultsPdfOptionsModal from "@/components/servicios/ResultsPdfOptionsModal";
+import ServiceOutcomePrediction from "@/components/servicios/ServiceOutcomePrediction";
 import ConnectionStatusBanner from "@/components/ui/ConnectionStatusBanner";
 import EntityActionsMenu from "@/components/ui/EntityActionsMenu";
 import SortableTableHeader from "@/components/ui/SortableTableHeader";
@@ -79,6 +80,9 @@ const statusLabel = (status: ServiceStatus) => {
   } as const;
   return labels[status] || status;
 };
+
+const canShowOutcomePrediction = (status: ServiceStatus) =>
+  status === "pending" || status === "in_progress";
 
 type ServiceSortKey =
   | "folio"
@@ -606,7 +610,7 @@ export default function ServiciosPage() {
       ) : (
         <>
           <div className="hidden overflow-visible rounded-[2rem] border border-gray-200 bg-white shadow-sm 2xl:block">
-            <div className="grid grid-cols-[1.45fr_2.2fr_2fr_1fr_1.7fr_1fr_0.8fr_1fr_1fr] gap-4 border-b border-gray-200 bg-gray-50 px-6 py-4 text-sm font-semibold text-gray-700">
+            <div className="grid grid-cols-[1.25fr_2fr_1.8fr_1fr_1.4fr_1fr_0.8fr_1fr_1.55fr_0.8fr] gap-4 border-b border-gray-200 bg-gray-50 px-6 py-4 text-sm font-semibold text-gray-700">
               <div>
                 <SortableTableHeader
                   label="Folio"
@@ -671,6 +675,7 @@ export default function ServiciosPage() {
                   onToggle={() => toggleSort("status")}
                 />
               </div>
+              <div>Pronóstico</div>
               <div className="text-right">Acciones</div>
             </div>
 
@@ -678,7 +683,7 @@ export default function ServiciosPage() {
               {paginatedServices.map((service) => (
                 <div
                   key={service.id}
-                  className="grid grid-cols-[1.45fr_2.2fr_2fr_1fr_1.7fr_1fr_0.8fr_1fr_1fr] items-start gap-4 px-6 py-5 transition-colors hover:bg-gray-50"
+                  className="grid grid-cols-[1.25fr_2fr_1.8fr_1fr_1.4fr_1fr_0.8fr_1fr_1.55fr_0.8fr] items-start gap-4 px-6 py-5 transition-colors hover:bg-gray-50"
                 >
                   <div className="min-w-0">
                     <span className="inline-flex max-w-full items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
@@ -739,6 +744,17 @@ export default function ServiciosPage() {
                     ) : null}
                   </div>
 
+                  <div className="min-w-0">
+                    {canShowOutcomePrediction(service.status) ? (
+                      <ServiceOutcomePrediction
+                        variant="badge"
+                        prediction={service.outcomePrediction}
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-400">Estado real registrado</span>
+                    )}
+                  </div>
+
                   <div className="flex justify-end">
                     <EntityActionsMenu
                       buttonLabel="Acciones"
@@ -784,6 +800,18 @@ export default function ServiciosPage() {
                 {service.syncState === "pending" ? (
                   <div className="mb-3 rounded-2xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
                     Cambio local pendiente de sincronización
+                  </div>
+                ) : null}
+
+                {canShowOutcomePrediction(service.status) ? (
+                  <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Pronóstico
+                    </p>
+                    <ServiceOutcomePrediction
+                      variant="badge"
+                      prediction={service.outcomePrediction}
+                    />
                   </div>
                 ) : null}
 

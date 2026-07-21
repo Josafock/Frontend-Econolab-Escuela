@@ -304,7 +304,7 @@ export default function StudyDetailClient({
       await Promise.all([
         getStudyById(studyId),
         getStudyDetails(studyId),
-        getStudies({ limit: 500, type: "study" }),
+        getStudies({ limit: 2000, type: "study" }),
       ]);
 
     setIsRefreshing(false);
@@ -387,7 +387,7 @@ export default function StudyDetailClient({
         await Promise.all([
           getStudyById(studyId),
           getStudyDetails(studyId),
-          getStudies({ limit: 500, type: "study" }),
+          getStudies({ limit: 2000, type: "study" }),
         ]);
 
       if (cancelled) {

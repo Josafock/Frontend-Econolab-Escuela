@@ -5,9 +5,11 @@ import { getPatients, type Patient } from '@/features/patients/api/patients';
 import {
   createService,
   getServices,
+  predictServiceOutcomesBatch,
   updateService,
   updateServiceStatus,
   type CreateServicePayload,
+  type ServiceOutcomePrediction,
   type ServiceOrder,
   type ServiceStatus,
   type UpdateServicePayload,
@@ -56,6 +58,7 @@ export type UiService = {
   status: ServiceStatus;
   createdAtIso?: string | null;
   deliveryAtIso?: string | null;
+  outcomePrediction?: ServiceOutcomePrediction | null;
   syncState?: 'synced' | 'pending';
   localOnly?: boolean;
 };
@@ -395,7 +398,36 @@ export function useServicesData(searchTerm: string, filters: ServicesFilters) {
         return;
       }
 
-      const mapped = response.data.data.map(toUiService);
+      let mapped = response.data.data.map(toUiService);
+      const predictionServiceIds = mapped
+        .filter(
+          (service) =>
+            !service.localOnly &&
+            (service.status === 'pending' || service.status === 'in_progress'),
+        )
+        .map((service) => service.id);
+
+      if (predictionServiceIds.length > 0) {
+        const predictionResponse = await predictServiceOutcomesBatch({
+          serviceIds: predictionServiceIds,
+        });
+
+        if (predictionResponse.ok) {
+          const predictionsByServiceId = new Map(
+            predictionResponse.data.data.predictions.map((item) => [
+              item.serviceId,
+              item.prediction,
+            ]),
+          );
+
+          mapped = mapped.map((service) => ({
+            ...service,
+            outcomePrediction:
+              predictionsByServiceId.get(service.id) ?? null,
+          }));
+        }
+      }
+
       setServices(mapped);
       setQueryCache(cacheKey, mapped);
       const storedSnapshot = writeOfflineSnapshot(snapshotKey, mapped);
@@ -454,7 +486,7 @@ export function useServicesData(searchTerm: string, filters: ServicesFilters) {
     const [patientsResponse, doctorsResponse, studiesResponse] = await Promise.all([
       getPatients({ limit: 400, status: 'all' }),
       getDoctors({ limit: 400 }),
-      getStudies({ limit: 400, status: 'active' }),
+      getStudies({ limit: 2000, status: 'active' }),
     ]);
 
     const nextCatalogs: CatalogsState = {

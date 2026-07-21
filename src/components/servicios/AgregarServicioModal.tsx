@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarClock,
   ChevronLeft,
@@ -27,10 +27,17 @@ import {
   type CreateDoctorPayload,
   type Doctor,
 } from "@/features/doctors/api/doctors";
-import { getSuggestedServiceFolio } from "@/features/services/api/services";
+import {
+  getSuggestedServiceFolio,
+  predictServiceOutcome,
+  type ServiceOutcomePrediction as ServiceOutcomePredictionResult,
+  type ServiceOutcomePredictionPayload,
+} from "@/features/services/api/services";
 import type { Study } from "@/features/studies/api/studies";
 import AppModal from "@/components/ui/AppModal";
+import ServiceOutcomePrediction from "@/components/servicios/ServiceOutcomePrediction";
 import { matchesNormalizedSearch, normalizeSearchText } from "@/helpers/search";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   SERVICE_BRANCH_OPTIONS,
   calculateServiceTotals,
@@ -146,6 +153,11 @@ export default function AddServiceModal({
     initialValues ?? createEmptyServiceForm(),
   );
   const [useAutoFolio, setUseAutoFolio] = useState(!initialValues);
+  const [outcomePrediction, setOutcomePrediction] =
+    useState<ServiceOutcomePredictionResult | null>(null);
+  const [isOutcomePredictionLoading, setIsOutcomePredictionLoading] =
+    useState(false);
+  const outcomePredictionRequestVersion = useRef(0);
 
   useEffect(() => {
     setLocalPatients((current) => {
@@ -202,6 +214,68 @@ export default function AddServiceModal({
       ),
     [courtesyPercent, formData.items, studies],
   );
+
+  const outcomePredictionPayload = useMemo<ServiceOutcomePredictionPayload | null>(() => {
+    if (initialValues || !formData.deliveryAt || formData.items.length === 0) {
+      return null;
+    }
+
+    const payload = mapServiceFormToPayload(formData, {
+      autoGenerateFolio: useAutoFolio,
+    });
+
+    return {
+      branchName: payload.branchName,
+      sampleAt: payload.sampleAt,
+      deliveryAt: payload.deliveryAt,
+      courtesyPercent: payload.courtesyPercent,
+      items: payload.items,
+    };
+  }, [formData, initialValues, useAutoFolio]);
+  const debouncedOutcomePredictionPayload = useDebouncedValue(
+    outcomePredictionPayload,
+    600,
+  );
+
+  useEffect(() => {
+    outcomePredictionRequestVersion.current += 1;
+    setOutcomePrediction(null);
+    setIsOutcomePredictionLoading(Boolean(outcomePredictionPayload));
+  }, [outcomePredictionPayload]);
+
+  useEffect(() => {
+    if (!debouncedOutcomePredictionPayload) {
+      return;
+    }
+
+    const requestVersion = outcomePredictionRequestVersion.current;
+    setIsOutcomePredictionLoading(true);
+
+    void predictServiceOutcome(debouncedOutcomePredictionPayload)
+      .then((response) => {
+        if (requestVersion !== outcomePredictionRequestVersion.current) return;
+
+        setIsOutcomePredictionLoading(false);
+        setOutcomePrediction(
+          response.ok
+            ? response.data.data
+            : {
+                available: false,
+                message:
+                  response.errors[0] ??
+                  "Predicción no disponible por el momento.",
+              },
+        );
+      })
+      .catch(() => {
+        if (requestVersion !== outcomePredictionRequestVersion.current) return;
+        setIsOutcomePredictionLoading(false);
+        setOutcomePrediction({
+          available: false,
+          message: "Predicción no disponible por el momento.",
+        });
+      });
+  }, [debouncedOutcomePredictionPayload]);
 
   const filteredStudies = useMemo(() => {
     const normalizedSearch = normalizeSearchText(studySearch);
@@ -1401,7 +1475,14 @@ export default function AddServiceModal({
                           </div>
                         </div>
                       </div>
-                    </div>
+                     </div>
+
+                    {!initialValues ? (
+                      <ServiceOutcomePrediction
+                        prediction={outcomePrediction}
+                        loading={isOutcomePredictionLoading}
+                      />
+                    ) : null}
 
                     <div className="rounded-[1.75rem] border border-emerald-100 bg-emerald-50/80 p-5 text-sm text-emerald-900">
                       <p className="font-semibold">Al guardar</p>

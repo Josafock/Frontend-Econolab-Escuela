@@ -82,6 +82,60 @@ export type CreateServicePayload = {
 
 export type UpdateServicePayload = Partial<CreateServicePayload>;
 
+export type ServiceOutcome =
+  | "completed_on_time"
+  | "delayed"
+  | "cancelled";
+
+export type ServiceOutcomeProbability = {
+  outcome: ServiceOutcome;
+  label: string;
+  probability: number;
+};
+
+export type ServiceOutcomePredictionModel = {
+  version: string;
+};
+
+export type ServiceOutcomePrediction =
+  | {
+      available: false;
+      message: string;
+      model?: ServiceOutcomePredictionModel;
+    }
+  | {
+      available: true;
+      predictedOutcome: ServiceOutcome;
+      label: string;
+      confidence: number;
+      probabilities: ServiceOutcomeProbability[];
+      model: ServiceOutcomePredictionModel;
+    };
+
+export type ServiceOutcomePredictionPayload = Pick<
+  CreateServicePayload,
+  "branchName" | "sampleAt" | "deliveryAt" | "courtesyPercent" | "items"
+>;
+
+export type ServiceOutcomePredictionResponse = {
+  message: string;
+  data: ServiceOutcomePrediction;
+};
+
+export type ServiceOutcomePredictionsBatchPayload = {
+  serviceIds: number[];
+};
+
+export type ServiceOutcomePredictionsBatchResponse = {
+  message: string;
+  data: {
+    predictions: Array<{
+      serviceId: number;
+      prediction: ServiceOutcomePrediction;
+    }>;
+  };
+};
+
 export type ServicesSearchResponse = {
   data: ServiceOrder[];
   meta: { page: number; limit: number; total: number };
@@ -153,4 +207,28 @@ export async function updateServiceStatus(
     method: "PUT",
     body: JSON.stringify({ status }),
   });
+}
+
+export async function predictServiceOutcome(
+  payload: ServiceOutcomePredictionPayload,
+): Promise<ApiResult<ServiceOutcomePredictionResponse>> {
+  return fetchApi<ServiceOutcomePredictionResponse>(
+    "/services/outcome-prediction",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function predictServiceOutcomesBatch(
+  payload: ServiceOutcomePredictionsBatchPayload,
+): Promise<ApiResult<ServiceOutcomePredictionsBatchResponse>> {
+  return fetchApi<ServiceOutcomePredictionsBatchResponse>(
+    "/services/outcome-predictions/batch",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }

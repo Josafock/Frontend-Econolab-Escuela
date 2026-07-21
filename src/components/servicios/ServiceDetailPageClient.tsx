@@ -449,7 +449,7 @@ export default function ServiceDetailPage() {
         await Promise.all([
           getPatients({ limit: 400, status: "all" }),
           getDoctors({ limit: 400 }),
-          getStudies({ limit: 400, status: "active" }),
+          getStudies({ limit: 2000, status: "active" }),
         ]);
       const hasSuccessfulCatalogLoad =
         patientsResponse.ok || doctorsResponse.ok || studiesResponse.ok;
