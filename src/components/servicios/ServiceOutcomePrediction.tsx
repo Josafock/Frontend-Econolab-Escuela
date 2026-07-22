@@ -209,6 +209,8 @@ export default function ServiceOutcomePrediction({
   variant = "panel",
   ...props
 }: ServiceOutcomePredictionProps) {
+  // Componente reutilizable que convierte la respuesta del modelo en un panel
+  // detallado (formulario) o una insignia compacta (listado).
   return variant === "badge" ? (
     <PredictionBadge {...props} />
   ) : (

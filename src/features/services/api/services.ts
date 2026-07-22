@@ -212,6 +212,7 @@ export async function updateServiceStatus(
 export async function predictServiceOutcome(
   payload: ServiceOutcomePredictionPayload,
 ): Promise<ApiResult<ServiceOutcomePredictionResponse>> {
+  // FORMULARIO -> BACKEND: manda los datos capturados al endpoint individual.
   return fetchApi<ServiceOutcomePredictionResponse>(
     "/services/outcome-prediction",
     {
@@ -224,6 +225,7 @@ export async function predictServiceOutcome(
 export async function predictServiceOutcomesBatch(
   payload: ServiceOutcomePredictionsBatchPayload,
 ): Promise<ApiResult<ServiceOutcomePredictionsBatchResponse>> {
+  // LISTADO -> BACKEND: manda varios IDs al endpoint por lote.
   return fetchApi<ServiceOutcomePredictionsBatchResponse>(
     "/services/outcome-predictions/batch",
     {

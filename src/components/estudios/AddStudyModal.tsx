@@ -50,12 +50,10 @@ export default function AddStudyModal({
   isSaving,
   initialType = "study",
 }: AddStudyModalProps) {
-  const [formData, setFormData] = useState(() =>
-    ({
-      ...createEmptyStudyForm(initialType),
-      clave: generateSuggestedStudyCode(initialType),
-    }),
-  );
+  const [formData, setFormData] = useState(() => ({
+    ...createEmptyStudyForm(initialType),
+    clave: generateSuggestedStudyCode(initialType),
+  }));
   const [useAutoCode, setUseAutoCode] = useState(true);
   const [touched, setTouched] = useState<StudyFormTouched>({});
   const entityLabel = formData.tipo === "package" ? "paquete" : "estudio";
@@ -169,7 +167,8 @@ export default function AddStudyModal({
   };
 
   const handleApplyEstimation = (estimation: StudyEstimation) => {
-    // Aqui se ocupa la salida del modelo en el formulario real.
+    // PASO 7: aqui se utiliza la salida del modelo en el formulario real.
+    // Solo llena precioNormal; el administrador aun puede cambiarlo o cancelar.
     setFormData((current) => ({
       ...current,
       precioNormal: estimation.suggestedNormalPrice.toFixed(2),

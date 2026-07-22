@@ -121,10 +121,16 @@ export type StudyEstimation = {
   suggestedNormalPrice: number;
   priceRange: { min: number; max: number };
   model: {
-    algorithm: "linear_regression";
+    algorithm: "ridge_regression";
     version: string;
+    artifactGeneratedAt: string;
+    randomSeed: number;
     trainingSamples: number;
+    testSamples: number;
     priceMeanAbsoluteError: number;
+    priceRootMeanSquaredError: number;
+    priceR2: number;
+    baselineMeanAbsoluteError: number;
     featuresUsed: string[];
   };
   warnings: string[];
@@ -170,7 +176,11 @@ export async function getSuggestedStudyCode(
   );
 }
 
-/** Manda los datos del formulario al modelo de regresion del backend. */
+/**
+ * Envia el formulario al endpoint POST /studies/estimate.
+ * El backend carga el artefacto entrenado previamente y devuelve el precio.
+ * Este request utiliza el modelo: no consulta el dataset ni lo reentrena.
+ */
 export async function estimateStudy(
   payload: StudyEstimationPayload,
 ): Promise<ApiResult<StudyEstimationResponse>> {

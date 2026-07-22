@@ -745,6 +745,7 @@ export default function ServiciosPage() {
                   </div>
 
                   <div className="min-w-0">
+                    {/* AQUÍ SE UTILIZA en cada fila de la tabla de servicios. */}
                     {canShowOutcomePrediction(service.status) ? (
                       <ServiceOutcomePrediction
                         variant="badge"
@@ -803,6 +804,7 @@ export default function ServiciosPage() {
                   </div>
                 ) : null}
 
+                {/* AQUÍ SE UTILIZA en cada tarjeta de la vista móvil. */}
                 {canShowOutcomePrediction(service.status) ? (
                   <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 p-3">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">

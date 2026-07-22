@@ -46,6 +46,7 @@ export default function StudyEstimationPanel({
     }
 
     setIsEstimating(true);
+    // PASO 5: el formulario manda tipo, metodo y parametros al endpoint.
     const response = await estimateStudy({
       type,
       parameterCount: parsedParameterCount,
@@ -58,6 +59,7 @@ export default function StudyEstimationPanel({
       return;
     }
 
+    // PASO 6: se guarda la prediccion para mostrar precio y rango en pantalla.
     setEstimation(response.data.data);
   };
 
@@ -70,11 +72,12 @@ export default function StudyEstimationPanel({
           </span>
           <div>
             <h3 className="font-semibold text-gray-900">
-              Estimación con regresión lineal
+              Estimación con regresión Ridge
             </h3>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-gray-600">
-              El modelo usa estudios anteriores para sugerir el precio normal.
-              El valor se puede modificar antes de registrar.
+              El modelo entrenado y validado usa el catálogo histórico para
+              sugerir el precio normal. El valor se puede modificar antes de
+              registrar.
             </p>
           </div>
         </div>
@@ -129,7 +132,9 @@ export default function StudyEstimationPanel({
             Usar precio sugerido
           </button>
           <p className="text-xs text-gray-500 lg:col-span-2">
-            Modelo entrenado con {estimation.model.trainingSamples} estudios.
+            Modelo entrenado con {estimation.model.trainingSamples} estudios y
+            evaluado con {estimation.model.testSamples} diferentes (MAE: {"$"}
+            {estimation.model.priceMeanAbsoluteError.toFixed(2)} MXN).
           </p>
           {estimation.warnings.length > 0 ? (
             <p className="text-xs leading-5 text-amber-700 lg:col-span-2">

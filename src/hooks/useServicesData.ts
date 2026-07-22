@@ -408,6 +408,7 @@ export function useServicesData(searchTerm: string, filters: ServicesFilters) {
         .map((service) => service.id);
 
       if (predictionServiceIds.length > 0) {
+        // AQUÍ SE MANDA LLAMAR EL MODELO para las órdenes visibles del listado.
         const predictionResponse = await predictServiceOutcomesBatch({
           serviceIds: predictionServiceIds,
         });
@@ -420,6 +421,7 @@ export function useServicesData(searchTerm: string, filters: ServicesFilters) {
             ]),
           );
 
+          // Adjunta cada pronóstico a la orden que después lo mostrará en pantalla.
           mapped = mapped.map((service) => ({
             ...service,
             outcomePrediction:

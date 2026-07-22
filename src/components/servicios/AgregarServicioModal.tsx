@@ -215,6 +215,7 @@ export default function AddServiceModal({
     [courtesyPercent, formData.items, studies],
   );
 
+  // Construye la entrada X con los datos actuales del formulario.
   const outcomePredictionPayload = useMemo<ServiceOutcomePredictionPayload | null>(() => {
     if (initialValues || !formData.deliveryAt || formData.items.length === 0) {
       return null;
@@ -251,6 +252,7 @@ export default function AddServiceModal({
     const requestVersion = outcomePredictionRequestVersion.current;
     setIsOutcomePredictionLoading(true);
 
+    // AQUÍ SE MANDA LLAMAR EL MODELO desde el formulario (por medio del API).
     void predictServiceOutcome(debouncedOutcomePredictionPayload)
       .then((response) => {
         if (requestVersion !== outcomePredictionRequestVersion.current) return;
@@ -1477,6 +1479,7 @@ export default function AddServiceModal({
                       </div>
                      </div>
 
+                    {/* AQUÍ SE UTILIZA: muestra el resultado antes de guardar. */}
                     {!initialValues ? (
                       <ServiceOutcomePrediction
                         prediction={outcomePrediction}

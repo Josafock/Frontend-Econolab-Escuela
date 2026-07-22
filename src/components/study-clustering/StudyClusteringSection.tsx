@@ -58,6 +58,7 @@ type OperationalProfile = {
   suggestedName: string;
   shortDescription: string;
   keyCharacteristics: string[];
+  suggestedAction: string;
   studyCount: number;
   percentage: number;
   averages: ProfileAverages;
@@ -74,6 +75,8 @@ type ProfileStudy = {
   profileId: ProfileId;
   profileDisplayName?: string | null;
   isOutlier: boolean;
+  isSynthetic?: boolean;
+  assignmentSource?: "stored_model_artifact" | "stored_assignment";
   values: {
     price: number;
     deliveryHours: number;
@@ -97,6 +100,7 @@ type ModelEvaluation = {
   k: number;
   inertia: number;
   silhouette: number;
+  daviesBouldin?: number;
   iterations?: number;
   isElbow?: boolean;
   isSelected?: boolean;
@@ -110,6 +114,11 @@ type TechnicalDataQuality = {
   imputedValues: Record<string, number>;
   winsorizedValues?: Record<string, number>;
   ignoredConstantFeatures?: string[];
+  realRows?: number;
+  syntheticRows?: number;
+  syntheticPercentage?: number;
+  syntheticDemandRows?: number;
+  syntheticRequestCount?: number;
 };
 
 type TechnicalDetails = {
@@ -119,11 +128,20 @@ type TechnicalDetails = {
   elbowK?: number;
   selectionMethod: string;
   silhouetteScore: number;
+  daviesBouldinScore?: number | null;
   inertia: number;
   evaluations: ModelEvaluation[];
   featureNames: string[];
   excludedFeatures: string[];
   dataQuality: TechnicalDataQuality;
+  artifact?: {
+    storage: string;
+    loaded: boolean;
+    schemaVersion: string | null;
+    datasetFingerprintSha256: string | null;
+    reassignedStudies: number;
+    mismatchesWithStoredAssignments: number;
+  };
   warnings: string[];
 };
 
@@ -524,6 +542,8 @@ export default function StudyClusteringSection() {
       setError(null);
 
       try {
+        // USO EN EL SISTEMA: solicita los perfiles y estudios que K-Means dejo
+        // almacenados. La interfaz solo presenta el resultado; no entrena aqui.
         const response = await fetch("/api/study-clustering/analysis", {
           method: "GET",
           cache: "no-store",
@@ -1252,6 +1272,15 @@ export default function StudyClusteringSection() {
                         ))}
                       </div>
 
+                      <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-red-700">
+                          Acción administrativa sugerida
+                        </p>
+                        <p className="mt-1 text-sm leading-5 text-gray-700">
+                          {profile.suggestedAction}
+                        </p>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -1546,7 +1575,7 @@ export default function StudyClusteringSection() {
             </summary>
 
             <div className="space-y-6 border-t border-gray-200 p-6">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <div className="rounded-2xl bg-gray-50 p-4">
                   <p className="text-xs text-gray-500">Algoritmo</p>
                   <p className="mt-2 font-semibold text-gray-900">
@@ -1574,6 +1603,20 @@ export default function StudyClusteringSection() {
                   <p className="text-xs text-gray-500">Inercia</p>
                   <p className="mt-2 font-semibold text-gray-900">
                     {formatNumber(result.technicalDetails.inertia, 2)}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-gray-50 p-4">
+                  <p className="text-xs text-gray-500">Davies-Bouldin</p>
+                  <p className="mt-2 font-semibold text-gray-900">
+                    {result.technicalDetails.daviesBouldinScore == null
+                      ? "No disponible"
+                      : formatNumber(
+                          result.technicalDetails.daviesBouldinScore,
+                          4,
+                        )}
+                  </p>
+                  <p className="mt-1 text-[11px] text-gray-500">
+                    Un valor menor representa grupos más compactos.
                   </p>
                 </div>
               </div>
@@ -1671,6 +1714,69 @@ export default function StudyClusteringSection() {
                 </div>
               </div>
 
+              <div className="overflow-hidden rounded-2xl border border-gray-200">
+                <div className="border-b border-gray-200 px-5 py-4">
+                  <h3 className="font-semibold text-gray-900">
+                    Comparación de alternativas de K
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Se favorece mayor silueta y menor Davies-Bouldin, evitando
+                    grupos demasiado pequeños.
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 text-left text-gray-600">
+                      <tr>
+                        <th className="px-5 py-3 font-semibold">K</th>
+                        <th className="px-5 py-3 font-semibold">Inercia</th>
+                        <th className="px-5 py-3 font-semibold">Silueta</th>
+                        <th className="px-5 py-3 font-semibold">
+                          Davies-Bouldin
+                        </th>
+                        <th className="px-5 py-3 font-semibold">Decisión</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {result.technicalDetails.evaluations.map((evaluation) => (
+                        <tr key={`evaluation-${evaluation.k}`}>
+                          <td className="px-5 py-3 font-semibold">
+                            {evaluation.k}
+                          </td>
+                          <td className="px-5 py-3">
+                            {formatNumber(evaluation.inertia, 2)}
+                          </td>
+                          <td className="px-5 py-3">
+                            {formatNumber(evaluation.silhouette, 4)}
+                          </td>
+                          <td className="px-5 py-3">
+                            {evaluation.daviesBouldin == null
+                              ? "—"
+                              : formatNumber(evaluation.daviesBouldin, 4)}
+                          </td>
+                          <td className="px-5 py-3">
+                            {evaluation.k ===
+                            result.technicalDetails.selectedK ? (
+                              <span className="rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
+                                Seleccionado
+                              </span>
+                            ) : evaluation.isElbow ? (
+                              <span className="text-xs text-amber-700">
+                                Codo
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-500">
+                                Alternativa
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               <div className="grid gap-4 lg:grid-cols-3">
                 <div className="rounded-2xl border border-gray-200 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -1735,9 +1841,56 @@ export default function StudyClusteringSection() {
                         )}
                       </dd>
                     </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>Filas reales</dt>
+                      <dd className="font-semibold">
+                        {result.technicalDetails.dataQuality.realRows ?? "—"}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>Filas sintéticas ECN-CAT</dt>
+                      <dd className="font-semibold">
+                        {result.technicalDetails.dataQuality.syntheticRows ??
+                          "—"}
+                        {result.technicalDetails.dataQuality
+                          .syntheticPercentage != null
+                          ? ` (${formatNumber(result.technicalDetails.dataQuality.syntheticPercentage, 2)}%)`
+                          : ""}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>Solicitudes sintéticas ECO-ML</dt>
+                      <dd className="font-semibold">
+                        {result.technicalDetails.dataQuality
+                          .syntheticRequestCount ?? "—"}
+                      </dd>
+                    </div>
                   </dl>
                 </div>
               </div>
+
+              {result.technicalDetails.artifact ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+                  <p className="font-semibold">
+                    Artefacto reutilizable del modelo
+                  </p>
+                  <p className="mt-1">
+                    {result.technicalDetails.artifact.loaded
+                      ? `El backend cargó el JSONB v${result.technicalDetails.artifact.schemaVersion ?? "desconocida"} y reasignó ${result.technicalDetails.artifact.reassignedStudies} estudios a sus centroides.`
+                      : "Esta ejecución es anterior al artefacto reutilizable; vuelve a calcular el clustering."}
+                  </p>
+                  {result.technicalDetails.artifact.loaded ? (
+                    <p className="mt-1">
+                      Diferencias contra la fotografía guardada:{" "}
+                      {
+                        result.technicalDetails.artifact
+                          .mismatchesWithStoredAssignments
+                      }
+                      .
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
               {result.technicalDetails.warnings.length > 0 ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
