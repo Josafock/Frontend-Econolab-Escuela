@@ -62,7 +62,8 @@ function PredictionBadge({
   }
 
   if (!prediction?.available) {
-    const message = prediction?.message ?? "Predicción no disponible por el momento.";
+    const message =
+      prediction?.message ?? "Predicción no disponible por el momento.";
 
     return (
       <span
@@ -127,7 +128,10 @@ function PredictionPanel({
 
       {loading ? (
         <div className="mt-4 flex items-center gap-2 rounded-2xl border border-gray-200 bg-white p-4 text-sm font-medium text-gray-600">
-          <Loader2 className="h-4 w-4 animate-spin text-red-600" aria-hidden="true" />
+          <Loader2
+            className="h-4 w-4 animate-spin text-red-600"
+            aria-hidden="true"
+          />
           Calculando el resultado más probable...
         </div>
       ) : !prediction?.available ? (
@@ -177,7 +181,9 @@ function PredictionPanel({
                   return (
                     <div key={item.outcome}>
                       <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
-                        <span className="font-medium text-gray-700">{item.label}</span>
+                        <span className="font-medium text-gray-700">
+                          {item.label}
+                        </span>
                         <span className="font-semibold text-gray-950">
                           {formatPercentage(item.probability)}
                         </span>
