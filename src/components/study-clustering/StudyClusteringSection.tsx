@@ -902,50 +902,6 @@ export default function StudyClusteringSection() {
           </section>
 
           <Panel className="p-6">
-            <div className="flex items-start gap-3">
-              <div className="rounded-2xl bg-amber-50 p-3 text-amber-700">
-                <Lightbulb className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-600">
-                  Lectura administrativa
-                </p>
-                <h2 className="mt-2 text-xl font-semibold text-gray-900">
-                  Hallazgos del catálogo
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-gray-600">
-                  Puntos destacados derivados del último resultado guardado.
-                </p>
-              </div>
-            </div>
-
-            {result.findings.length > 0 ? (
-              <div className="mt-5 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-                {result.findings.map((finding) => {
-                  const findingProfile = finding.profileId
-                    ? profileById.get(String(finding.profileId))
-                    : null;
-                  return (
-                    <FindingCard
-                      key={finding.findingId}
-                      finding={finding}
-                      profileName={findingProfile?.friendlyName}
-                      profileAliases={[
-                        findingProfile?.suggestedName,
-                        findingProfile?.displayName,
-                      ]}
-                    />
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="mt-5 rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-sm text-gray-600">
-                El último resultado no registró hallazgos adicionales.
-              </div>
-            )}
-          </Panel>
-
-          <Panel className="p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-600">
