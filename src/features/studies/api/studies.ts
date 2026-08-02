@@ -114,7 +114,10 @@ export type StudyDetailMutationResponse = {
 export type StudyEstimationPayload = {
   type: StudyType;
   parameterCount: number;
+  durationMinutes?: number;
   method?: string;
+  sampleType?: StudySampleType;
+  requiresSpecialProcessing?: boolean | null;
 };
 
 export type StudyEstimation = {

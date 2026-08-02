@@ -29,6 +29,7 @@ import {
   validateStudyForm,
   type StudyFormTouched,
 } from "@/components/estudios/studyFormUtils";
+import { timeValueToMinutes } from "@/helpers/studies";
 import {
   Modal,
   ModalBody,
@@ -215,6 +216,13 @@ export default function AddStudyModal({
                   <StudyEstimationPanel
                     type={formData.tipo}
                     method={formData.metodo}
+                    durationMinutes={timeValueToMinutes(formData.duracion)}
+                    sampleType={formData.tipoMuestra}
+                    requiresSpecialProcessing={
+                      formData.procesamientoEspecial === "unknown"
+                        ? undefined
+                        : formData.procesamientoEspecial === "yes"
+                    }
                     disabled={isSaving}
                     onApply={handleApplyEstimation}
                   />

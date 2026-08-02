@@ -6,12 +6,16 @@ import toast from "react-hot-toast";
 import {
   estimateStudy,
   type StudyEstimation,
+  type StudySampleType,
   type StudyType,
 } from "@/features/studies/api/studies";
 
 type StudyEstimationPanelProps = {
   type: StudyType;
   method: string;
+  durationMinutes: number;
+  sampleType: StudySampleType;
+  requiresSpecialProcessing?: boolean | null;
   disabled?: boolean;
   onApply: (estimation: StudyEstimation) => void;
 };
@@ -27,6 +31,9 @@ function formatMoney(value: number) {
 export default function StudyEstimationPanel({
   type,
   method,
+  durationMinutes,
+  sampleType,
+  requiresSpecialProcessing,
   disabled = false,
   onApply,
 }: StudyEstimationPanelProps) {
@@ -50,7 +57,10 @@ export default function StudyEstimationPanel({
     const response = await estimateStudy({
       type,
       parameterCount: parsedParameterCount,
+      durationMinutes,
       method: method.trim() || undefined,
+      sampleType,
+      requiresSpecialProcessing,
     });
     setIsEstimating(false);
 
