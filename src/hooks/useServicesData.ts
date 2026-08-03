@@ -375,7 +375,9 @@ export function useServicesData(searchTerm: string, filters: ServicesFilters) {
             : undefined,
         fromDate: nextFilters.fromDate || undefined,
         toDate: nextFilters.toDate || undefined,
-        limit: 1000,
+        // La pantalla administrativa necesita reflejar todo el historial activo
+        // cargado para la propuesta academica, no solo el primer millar.
+        limit: 2500,
       });
 
       if (!response.ok) {
