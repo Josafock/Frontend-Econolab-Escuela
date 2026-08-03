@@ -300,9 +300,6 @@ export default function StudyFormFields({
           </div>
         </div>
       </div>
-
-      {estimationPanel}
-
       <div className={sectionClassName}>
         <div className="mb-4">
           <h3 className="text-base font-semibold text-gray-900">Precios y condiciones</h3>
@@ -505,6 +502,8 @@ export default function StudyFormFields({
           </div>
         </div>
       ) : null}
+
+      {estimationPanel}
     </div>
   );
 }
